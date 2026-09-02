@@ -33,6 +33,25 @@ def mutate(rel_path: str, old: str, new: str) -> Callable[[Path], None]:
     return apply
 
 
+def mutate_all(rel_path: str, old: str, new: str) -> Callable[[Path], None]:
+    def apply(work: Path) -> None:
+        target = work / rel_path
+        text = target.read_text(encoding="utf-8")
+        if old not in text:
+            raise AssertionError(f"anchor {old!r} not found in {rel_path}")
+        target.write_text(text.replace(old, new), encoding="utf-8")
+
+    return apply
+
+
+def append_text(rel_path: str, text: str) -> Callable[[Path], None]:
+    def apply(work: Path) -> None:
+        target = work / rel_path
+        target.write_text(target.read_text(encoding="utf-8") + text, encoding="utf-8")
+
+    return apply
+
+
 def drop_file(rel_path: str) -> Callable[[Path], None]:
     return lambda work: (work / rel_path).unlink()
 
@@ -113,8 +132,38 @@ CASES: list[tuple[str, Callable[[Path], None], str]] = [
     ),
     (
         "templates: mandatory NFR row deleted",
-        mutate("templates/SPEC.template.md", "| Observability |  |", ""),
+        mutate("templates/SPEC.template.md", "| Observability | `deployed` |  |", ""),
         "Observability",
+    ),
+    (
+        "templates: mandatory environment row deleted",
+        mutate("templates/PROJECT.template.md", "| Production |  |  |  |", ""),
+        "Production",
+    ),
+    (
+        "templates: mandatory section removed",
+        mutate("templates/DECISION.template.md", "## Alternatives Considered", "## Options"),
+        "Alternatives Considered",
+    ),
+    (
+        "traits: promised consumer does not carry the trait",
+        mutate_all("templates/PLAN.template.md", "`persistence`", "`persisted`"),
+        "persistence",
+    ),
+    (
+        "risk classes: class with no threat pass",
+        mutate("ASEF.md", "| `tenant` |", "| `tenancy` |"),
+        "tenancy",
+    ),
+    (
+        "prompt: route missing from the activation prompt",
+        mutate_all("prompt universale ASEF.txt", "RELEASE", "SHIP_IT"),
+        "RELEASE",
+    ),
+    (
+        "budget: module over its token ceiling",
+        append_text("modules/qa.md", "\n" + ("Repeat the procedure once more. " * 300)),
+        "budget",
     ),
     (
         "templates: mandatory command row deleted",

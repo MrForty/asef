@@ -21,7 +21,8 @@
 `ui` `public-surface` `typed` `persistence` `deployed`
 
 <!-- Keep the traits that apply, delete the rest. Traits switch on review axes,
-     QA depth and mandatory NFR rows. An undeclared trait is never reviewed. -->
+     QA depth, template sections and mandatory NFR rows. An undeclared trait is
+     never reviewed. -->
 
 ## Technical Baseline
 
@@ -45,6 +46,28 @@
 
 <!-- Exact commands a fresh agent runs to verify work. Work that cannot be
      verified by a command here cannot reach DONE. -->
+
+## Environments
+
+| Environment | URL | Deploy command | Health check |
+|---|---|---|---|
+| Local |  |  |  |
+| Preview / staging |  |  |  |
+| Production |  |  |  |
+
+<!-- Required when `deployed` is declared; otherwise mark the rows N/A, never
+     delete them. `ship` verifies the health check and the acceptance path here
+     after every rollout. -->
+
+## Domain Terms
+
+| Term | Meaning | Avoid |
+|---|---|---|
+|  |  |  |
+
+<!-- The words the user and the code share. Use them verbatim in artifacts,
+     identifiers and questions; add a term when a new concept appears; one word
+     never names two concepts. -->
 
 ## Non-Goals
 

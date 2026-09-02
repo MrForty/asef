@@ -11,6 +11,10 @@
 
 ## Decision
 
+## Alternatives Considered
+
+<!-- Each rejected option, including no change, and why it lost. -->
+
 ## Rationale
 
 <!-- Why this option meets current evidence and constraints. -->

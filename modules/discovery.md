@@ -26,13 +26,13 @@ Implementation details, full repository, unrelated research or downstream plans.
 
 ## Procedure
 
-1. Extract known problem, users, status quo, desired outcome and constraints.
+1. Extract known problem, users, status quo, desired outcome, constraints and the domain terms the user already uses.
 2. Build the gap ledger for every material unknown that remains.
 3. Resolve `RESEARCHABLE` gaps through `research`: competing solutions, market status quo, constraints. First-party demand evidence is never routed here.
 4. Identify the narrowest useful wedge and observable success signal.
 5. Ask surviving `USER-DECISION` gaps: demand, status quo and wedge one at a time under the demand exemption; everything else in one round.
 6. Record material assumptions with a validation path and revisit trigger.
-7. Create or patch `PROJECT.md`, declaring the project traits.
+7. Create or patch `PROJECT.md`: traits, domain terms, assumptions.
 
 A first answer about demand is usually the rehearsed one. Before recording it as `FACT`, push for the specific person, the specific occasion, and what the user did rather than said. Interest, praise and stated intent are not demand.
 

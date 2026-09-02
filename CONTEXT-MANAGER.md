@@ -6,7 +6,7 @@ Provide minimum sufficient context for the active module and keep context growth
 
 ## Memory levels
 
-- **Persistent:** goals, constraints, specification, plan, durable decisions and verified project state. Store in artifacts.
+- **Persistent:** goals, constraints, specification, plan, durable decisions, learnings and verified project state. Store in artifacts.
 - **Working:** current task, relevant files, active hypothesis and focused evidence. Keep only for the active module.
 - **Ephemeral:** raw outputs, rejected attempts and exploratory reasoning. Discard after use.
 
@@ -15,7 +15,7 @@ Provide minimum sufficient context for the active module and keep context growth
 Load in this order and stop as soon as the task is answerable:
 
 1. `ASEF.md`.
-2. `STATE.md`, if present.
+2. `STATE.md`, then `LEARNINGS.md`, if present.
 3. Current task or explicit request.
 4. Selected module.
 5. Relevant sections of `PROJECT.md`, `SPEC.md`, `PLAN.md` and decisions.
@@ -28,6 +28,7 @@ Load in this order and stop as soon as the task is answerable:
 - complete conversation history;
 - all ASEF modules;
 - whole artifacts when a section is sufficient;
+- `RESEARCH.md` rows unrelated to the current gaps;
 - complete repository trees or unrelated files;
 - closed tasks, rejected alternatives or raw research logs;
 - subagent transcripts or raw search output; keep only the returned answer packet.
@@ -48,13 +49,17 @@ If the active task no longer fits cleanly, update artifacts and hand off a compa
 ```text
 Goal:
 Current task:
-Verified state:
+Verified state (tree or commit):
 Relevant artifacts/files:
 Decisions/assumptions:
 Checks run and results:
 Next action:
 Blockers:
 ```
+
+## Parallel contexts
+
+One task per context. A parallel context receives its task file and the handoff packet, isolates its changes under the version-control rules in `ASEF.md`, and returns only an evidence packet. The orchestrating context integrates results and is the single writer of `STATE.md`.
 
 ## Exit compression
 

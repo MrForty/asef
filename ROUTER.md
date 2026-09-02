@@ -15,6 +15,7 @@ Select the smallest workflow that can complete the request. Routes are graphs: s
 | External code, repository or component integration | `REUSE` |
 | Review-only request | `REVIEW_ONLY` |
 | Verification-only request | `QA_ONLY` |
+| Commit, publish or deploy verified work | `RELEASE` |
 
 When multiple intents exist, start with the one that removes the greatest uncertainty or risk. Do not force discovery onto a well-defined bug or task.
 
@@ -23,32 +24,35 @@ When multiple intents exist, start with the one that removes the greatest uncert
 ```text
 GREENFIELD
 discovery → product-scope → specification → planning → slicing
-→ implementation → review ⇄ fix → qa → DONE
+→ implementation → review ⇄ fix → qa → ship? → DONE
 
 MODIFY
 specification? → planning? → slicing? → implementation
-→ review ⇄ fix → qa → DONE
+→ review ⇄ fix → qa → ship? → DONE
 
 DIAGNOSE
-diagnose → implementation → review ⇄ fix → qa → DONE
+diagnose → implementation → review ⇄ fix → qa → ship? → DONE
 diagnose → DONE when the fix is not authorized
 
 IMPROVE
 architecture-improvement → planning? → slicing? → implementation
-→ review ⇄ fix → qa → DONE
+→ review ⇄ fix → qa → ship? → DONE
 
 REUSE
 reuse-integration → specification? → planning? → slicing?
-→ implementation → review ⇄ fix → qa → DONE
+→ implementation → review ⇄ fix → qa → ship? → DONE
 
 REVIEW_ONLY
 review → DONE
 
 QA_ONLY
 qa → DONE
+
+RELEASE
+qa? → ship → DONE
 ```
 
-`?` means load only if the preceding evidence cannot safely determine execution. `fix` is the fix cycle inside `review`, not a separate module.
+`?` means load only if the preceding evidence cannot safely determine execution; `ship?` is entered only when release is requested or already authorized. `fix` is the fix cycle inside `review`, not a separate module.
 
 `research` is not a route node. Any module invokes it in place to resolve `RESEARCHABLE` gaps, then continues.
 
@@ -59,10 +63,12 @@ qa → DONE
 - Unknown cause: start at `diagnose`, not implementation.
 - Product uncertainty: route to `discovery` or `product-scope` only for the unresolved portion.
 - Research-only request: enter `discovery` and exit at `DONE` once the question is answered; no scoping follows.
+- `RELEASE` without fresh QA evidence on the current tree: enter `qa` first.
 - Architecture invalidated during implementation: return to `planning`.
 - Requested behavior invalidated: return to `specification` or `product-scope`.
 - Review finding: fix locally, then re-review the affected axis.
 - QA failure: diagnose the failure, fix it, re-run focused review and QA.
+- Post-release verification failure: `ship` rolls back and routes to `diagnose`; the fix runs as `DIAGNOSE`.
 - Stop when the request is satisfied and Definition of Done passes; do not traverse optional nodes for ceremony.
 
 ## Output

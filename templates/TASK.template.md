@@ -2,7 +2,9 @@
 
 **Status:** `READY | ACTIVE | BLOCKED | DONE`  
 **Depends on:** `None | TASK-NNN`  
-**Parallel-safe:** `yes | no`
+**Parallel-safe:** `yes | no`  
+**Risk classes:** `none`, or any of `auth` `payments` `tenant` `pii` `migration` `concurrency`  
+**Human actions:** `None | PLAN.md row #`
 
 ## Outcome
 
@@ -30,12 +32,13 @@
 
 ## Risk Checks
 
+- [ ] Threat pass items for each declared risk class considered.
 - [ ] Security/data/side effects considered where applicable.
 - [ ] Unrelated working changes preserved.
 
 ## Evidence
 
-<!-- Commands/checks and concise results. -->
+<!-- Commands, results, the tree they ran against, and the commit. -->
 
 ## Completion
 

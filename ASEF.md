@@ -2,7 +2,7 @@
 
 ```yaml
 asef:
-  version: 1.2
+  version: 1.5
   autonomy: AUTO
   token_mode: ECONOMY
   context: progressive
@@ -26,7 +26,7 @@ ASEF is a modular operating framework for software work. It routes the request, 
 ## Runtime
 
 1. Read this kernel.
-2. If present, read `STATE.md`; otherwise inspect the request and available project artifacts.
+2. If present, read `STATE.md` and `LEARNINGS.md` and check due revisit triggers in `RESEARCH.md`; otherwise inspect the request and available project artifacts.
 3. Classify intent with `ROUTER.md`.
 4. Load only the selected module and its required context.
 5. Classify material unknowns with the gap policy; resolve them through `modules/research.md` and `DECISION-ENGINE.md`.
@@ -34,7 +34,7 @@ ASEF is a modular operating framework for software work. It routes the request, 
 7. Update authoritative artifacts under `ARTIFACTS.md`.
 8. Compress the result into decisions, artifact changes, evidence and next state.
 9. Discard working and ephemeral context.
-10. Route to the next necessary node or stop at `DONE`.
+10. Route to the next necessary node; enter `ship` only when release is requested or authorized; otherwise stop at `DONE`.
 
 ## Core principles
 
@@ -66,11 +66,12 @@ Before asking or proceeding on incomplete information, classify every material u
 | `KNOWN` | Answered by an artifact or explicit instruction | Use it |
 | `INFERABLE` | Derivable from goals, constraints or conventions | Derive it |
 | `RESEARCHABLE` | Answerable by evidence outside the project | `modules/research.md` |
+| `HUMAN-ACTION` | Only the user can perform it: account, credential, DNS, payment, third-party console | One action block in `PLAN.md`, attached to the task that needs it; work continues on everything it does not block |
 | `USER-DECISION` | Passes the promotion test in `modules/research.md` | Batched question round, except gaps under the demand exemption |
 
 Ledger row: `GAP-NNN | question | why it blocks | consuming artifact | reversibility class`.
 
-Build the ledger once per module, resolve `RESEARCHABLE` gaps in a single fan-out, then ask only the surviving `USER-DECISION` gaps. Never ask what the ledger can resolve; never drip questions across turns.
+Build the ledger once per module, resolve `RESEARCHABLE` gaps in a single fan-out, batch `HUMAN-ACTION` gaps into one block, then ask only the surviving `USER-DECISION` gaps. Never ask what the ledger can resolve; never drip questions across turns.
 
 ## Project traits
 
@@ -78,13 +79,28 @@ Build the ledger once per module, resolve `RESEARCHABLE` gaps in a single fan-ou
 
 | Trait | Applies when | Switches on |
 |---|---|---|
-| `ui` | humans see a rendered surface | design review axis; accessibility NFR |
-| `public-surface` | others build against an API, CLI, SDK or library | developer-experience review axis; compatibility and versioning NFR |
+| `ui` | humans see a rendered surface | design review axis; UI section in `SPEC.md`; rendered-surface QA; accessibility NFR |
+| `public-surface` | others build against an API, CLI, SDK or library | developer-experience review axis; compatibility and versioning NFR; seam documentation in `ship` |
 | `typed` | the language has a static type system | type-rigor review axis |
-| `persistence` | the system owns durable state | migration and data-integrity QA depth; retention NFR |
-| `deployed` | the system runs somewhere for someone else | observability NFR; rollout and rollback in `PLAN.md` |
+| `persistence` | the system owns durable state | migration order and reversibility in `PLAN.md`; data-integrity QA depth; retention NFR |
+| `deployed` | the system runs somewhere for someone else | environments in `PROJECT.md`; rollout and rollback in `PLAN.md`; observability NFR; deploy verification in `ship` |
 
 Declare traits once and never re-derive them per module. A trait that is not declared is not reviewed; an `N/A` on a row tied to a declared trait is invalid.
+
+## Risk classes
+
+Traits describe the project; risk classes describe one change. Each task declares the classes its change touches, `none` when none applies.
+
+| Class | The change touches |
+|---|---|
+| `auth` | identity, sessions, permissions |
+| `payments` | money, billing, provider webhooks |
+| `tenant` | data or caches shared across tenants or organizations |
+| `pii` | personal data, its retention, export or deletion |
+| `migration` | schema or shape of durable state |
+| `concurrency` | shared mutable state, queues, retries, idempotency |
+
+A declared class makes the trust-boundary row in `PLAN.md` mandatory, adds the threat pass in `modules/review.md` and raises QA depth to `Deep` in `modules/qa.md`.
 
 ## Context policy
 
@@ -112,11 +128,20 @@ Every module declares:
 - Record only decisions that affect future work.
 - `STATE.md` is a compact pointer, not a second specification or plan.
 - Keep one current task per execution context when practical.
-- At route completion record in `STATE.md` question rounds, escalations and review/QA cycles: tuning input, nothing else.
+- At route completion record in `STATE.md` question rounds, escalations and review/QA cycles. Two or more escalations, or a repeated question round, on one route produce a `LEARNINGS.md` entry naming the cause.
+- `LEARNINGS.md` holds only what saves a fresh agent a wrong turn: pitfalls, project quirks, command fixes. Never a restatement of another artifact.
+
+## Version control
+
+- Work on a branch per route unless the project convention says otherwise; never on the default branch.
+- One commit per completed task or fix; the message carries the task id; the diff contains no unrelated change, debug artifact or secret.
+- Parallel contexts each work in their own worktree or branch; the orchestrating context integrates them.
+- Never rewrite shared history or force-push. Push, pull request, merge, deploy and publication belong to `modules/ship.md`.
+- Without git, record the change set as task evidence; the bounds above still apply.
 
 ## Build loop
 
-`TASK → inspect → establish test seam → failing check when useful → minimum implementation → focused verification → refactor if needed → REVIEW → FIX → RE-REVIEW → QA`
+`TASK → inspect → establish test seam → failing check when useful → minimum implementation → focused verification → refactor if needed → commit → REVIEW → FIX → RE-REVIEW → QA`
 
 Implementation may resolve local reversible details. Escalate to planning only if architecture is invalidated, and to product scope only if behavior or value changes.
 
@@ -127,10 +152,11 @@ Work is `DONE` only when all applicable conditions hold:
 - requested behavior and acceptance criteria pass;
 - specification fidelity passes;
 - engineering quality passes;
-- risk and safety pass;
-- relevant tests, checks and QA pass;
+- risk and safety pass, including the threat pass for every declared risk class;
+- relevant tests, checks and QA pass on the current tree;
+- documentation that describes the changed behavior is current, where it exists;
 - artifacts and `STATE.md` reflect the verified result;
 - no blocking finding remains;
 - remaining limitations are explicit.
 
-Shipping, deployment or external publication occurs only when requested or already authorized.
+Shipping, deployment or external publication occurs only when requested or already authorized, and only up to the authorized step.

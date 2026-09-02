@@ -22,21 +22,30 @@
 
 ## Compatibility and Constraints
 
+## UI
+
+<!-- Required when `ui` is declared; otherwise write N/A. One row per screen or
+     flow, specific enough that two implementers render the same thing. -->
+
+| Screen or flow | Purpose | States: empty / loading / error / success | Responsive and accessibility notes |
+|---|---|---|---|
+|  |  |  |  |
+
 ## Non-Functional Requirements
 
 <!-- State a target or `N/A` for every row. Never delete a row to avoid the question.
      A row tied to a trait declared in `PROJECT.md` cannot be `N/A`. -->
 
-| Aspect | Target |
-|---|---|
-| Performance / latency |  |
-| Scale / volume |  |
-| Compatibility / versioning |  |
-| Authentication / authorization |  |
-| Data, privacy, retention |  |
-| Observability |  |
-| Accessibility / i18n |  |
-| Licensing / compliance |  |
+| Aspect | Tied to | Target |
+|---|---|---|
+| Performance / latency | - |  |
+| Scale / volume | - |  |
+| Compatibility / versioning | `public-surface` |  |
+| Authentication / authorization | - |  |
+| Data, privacy, retention | `persistence` |  |
+| Observability | `deployed` |  |
+| Accessibility / i18n | `ui` |  |
+| Licensing / compliance | - |  |
 
 ## Test Seams
 

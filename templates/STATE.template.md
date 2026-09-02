@@ -1,13 +1,13 @@
 # State
 
 **Status:** `READY | ACTIVE | BLOCKED | DONE`  
-**Intent:** `GREENFIELD | MODIFY | DIAGNOSE | IMPROVE | REUSE | REVIEW_ONLY | QA_ONLY`  
+**Intent:** `GREENFIELD | MODIFY | DIAGNOSE | IMPROVE | REUSE | REVIEW_ONLY | QA_ONLY | RELEASE`  
 **Active module:**  
 **Current task:**  
-**Last verified:** 
+**Last verified:** `<commit or tree> at <date>`
 
-<!-- Single writer. Keep under 40 lines: anything longer belongs in an artifact,
-     not here. -->
+<!-- Single writer: the orchestrating context. Keep under 40 lines: anything
+     longer belongs in an artifact, not here. -->
 
 ## Verified State
 
@@ -25,15 +25,17 @@
 
 - Check:
 - Result:
+- Tree:
 
 ## Route metrics
 
-<!-- Fill at route completion. Tuning input only. -->
+<!-- Fill at route completion. Two or more escalations, or a repeated question
+     round, require a LEARNINGS.md entry. -->
 
-- Question rounds: | Escalations: | Review-fix cycles: | QA cycles:
+- Question rounds: | Escalations: | Review-fix cycles: | QA cycles: | Learning written: `yes | no`
 
 ## Next Action
 
 ## Blockers or Limitations
 
-<!-- Use None when empty. -->
+<!-- Use None when empty. Pending human actions go here by PLAN.md row. -->

@@ -17,7 +17,7 @@ Improve a proven architectural pain with minimal behavioral change.
 
 ## Optional
 
-Change history, runtime metrics and specialist architecture tooling.
+Change history, runtime metrics, `LEARNINGS.md` and specialist architecture tooling.
 
 ## Do not load
 
@@ -30,8 +30,8 @@ Unrelated domains, speculative scale requirements or fashionable patterns withou
 3. Reuse an existing project pattern where possible.
 4. Compare the no-change option with the smallest structural change.
 5. Preserve external behavior unless the specification explicitly changes it.
-6. Define migration order, compatibility, rollback and regression checks.
-7. Split into vertical or safe transitional slices only if needed.
+6. Define migration order, compatibility, rollback and regression checks; declare the risk classes the change touches.
+7. Split into vertical or expand-migrate-contract slices under `modules/slicing.md` only if needed.
 
 ## Exit criteria
 
