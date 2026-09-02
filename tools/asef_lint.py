@@ -58,6 +58,7 @@ ROUTE_NAMES = [
     "REUSE",
     "REVIEW_ONLY",
     "QA_ONLY",
+    "RELEASE",
 ]
 
 # Graph nodes that are not modules. `fix` is review's internal cycle.
@@ -71,9 +72,59 @@ CORE_ARTIFACTS = {
     "STATE.md": "STATE.template.md",
     "TASK-NNN.md": "TASK.template.md",
     "DECISIONS.md": "DECISIONS.template.md",
+    "RESEARCH.md": "RESEARCH.template.md",
+    "LEARNINGS.md": "LEARNINGS.template.md",
 }
 
 DECISION_RECORD_TEMPLATE = "DECISION.template.md"
+
+# Activation block a target project pastes into its own AGENTS.md.
+ACTIVATION_TEMPLATE = "AGENTS.template.md"
+
+# Sections CLAUDE.md declares mandatory per template: filled or N/A, never deleted.
+TEMPLATE_SECTIONS = {
+    "PROJECT.template.md": [
+        "Traits",
+        "Technical Baseline",
+        "Commands",
+        "Environments",
+        "Domain Terms",
+        "Non-Goals",
+        "Assumptions",
+    ],
+    "SPEC.template.md": [
+        "Scope",
+        "UI",
+        "Non-Functional Requirements",
+        "Test Seams",
+        "Acceptance Criteria",
+    ],
+    "PLAN.template.md": [
+        "Trust Boundaries and Failure Handling",
+        "Verification Strategy",
+        "Rollout and Rollback",
+        "Human Actions",
+        "Readiness",
+    ],
+    "TASK.template.md": ["Outcome", "Test Seam", "Acceptance Criteria", "Evidence"],
+    "STATE.template.md": [
+        "Verified State",
+        "Verification Evidence",
+        "Route metrics",
+        "Next Action",
+    ],
+    "DECISION.template.md": [
+        "Context",
+        "Decision",
+        "Alternatives Considered",
+        "Rationale",
+        "Consequences",
+    ],
+}
+
+# Approximate token ceilings (characters / 4). Compression is the point: a
+# change that trips one is a signal to cut, not to raise the ceiling.
+BUDGETS = {"kernel": 6000, "module": 1200, "prompt": 2400}
 
 # Template rows CLAUDE.md declares mandatory: filled or marked N/A, never deleted.
 SPEC_NFR_ROWS = [
@@ -88,17 +139,18 @@ SPEC_NFR_ROWS = [
 ]
 
 PROJECT_COMMAND_ROWS = ["Install", "Build", "Test", "Lint / typecheck", "Run"]
+PROJECT_ENV_ROWS = ["Local", "Preview / staging", "Production"]
 
 # Evidence and gap labels are contracts with the framework files (prompt txt).
 EVIDENCE_LABELS = ["FACT", "INFERENCE", "ASSUMPTION", "DECISION", "OPEN"]
-GAP_LABELS = ["KNOWN", "INFERABLE", "RESEARCHABLE", "USER-DECISION"]
+GAP_LABELS = ["KNOWN", "INFERABLE", "RESEARCHABLE", "HUMAN-ACTION", "USER-DECISION"]
 
 # Referenced names that belong to a target project or to the outside world and
 # therefore must not be resolved against this repository.
 REFERENCE_ALLOWLIST = {
     *CORE_ARTIFACTS,
     "ARCHITECTURE.md",
-    "RESEARCH.md",
+    "AGENTS.md",
     "CLAUDE.md",
     "tasks/TASK-NNN.md",
 }
@@ -150,19 +202,26 @@ def module_mode(text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def table_first_column(text: str) -> list[str]:
-    """First cell of every markdown table row, minus header and separator."""
-    cells = []
+def table_rows(text: str) -> list[list[str]]:
+    """Cells of every markdown table body row (header and separator dropped)."""
+    rows = []
     for line in text.splitlines():
         line = line.strip()
         if not line.startswith("|"):
             continue
         if re.match(r"^\|[\s:|-]+\|$", line):
             continue
-        parts = [p.strip() for p in line.strip("|").split("|")]
-        if parts:
-            cells.append(parts[0].strip("`").strip())
-    return cells[1:] if cells else []
+        rows.append([p.strip() for p in line.strip("|").split("|")])
+    return rows[1:] if rows else []
+
+
+def table_first_column(text: str) -> list[str]:
+    """First cell of every markdown table row, minus header and separator."""
+    return [row[0].strip("`").strip() for row in table_rows(text) if row]
+
+
+def estimated_tokens(text: str) -> int:
+    return len(text) // 4
 
 
 # --------------------------------------------------------------------------
@@ -189,7 +248,7 @@ def check_structure(root: Path, report: Report) -> dict[str, str]:
     if not templates_dir.is_dir():
         report.fail("structure", "missing `templates/` directory")
     else:
-        expected = set(CORE_ARTIFACTS.values()) | {DECISION_RECORD_TEMPLATE}
+        expected = set(CORE_ARTIFACTS.values()) | {DECISION_RECORD_TEMPLATE, ACTIVATION_TEMPLATE}
         present = {p.name for p in templates_dir.glob("*.md")}
         for missing in sorted(expected - present):
             report.fail("structure", f"missing template `templates/{missing}`")
@@ -368,18 +427,46 @@ def check_module_next(modules: dict[str, str], report: Report) -> None:
     report.ok("module `Next` targets resolve")
 
 
+def promised_consumers(cell: str, root: Path, modules: dict[str, str]) -> dict[str, Path]:
+    """Files a `Switches on` cell names: artifacts resolve to their template,
+    module names to their file. Prose tokens are not promises."""
+    found: dict[str, Path] = {}
+    for token in backticked(cell):
+        if token in CORE_ARTIFACTS:
+            found[token] = root / "templates" / CORE_ARTIFACTS[token]
+        elif token in modules:
+            found[token] = root / "modules" / f"{token}.md"
+    return found
+
+
 def check_traits(root: Path, modules: dict[str, str], report: Report) -> None:
-    """ASEF.md: a trait with no consumer is dead weight."""
+    """ASEF.md: a trait with no consumer is dead weight, and every file the
+    `Switches on` cell names must actually carry the trait."""
     asef = read(root / "ASEF.md")
-    traits = [t for t in table_first_column(section(asef, "Project traits")) if t]
+    rows = table_rows(section(asef, "Project traits"))
+    traits = [row[0].strip("`").strip() for row in rows if row and row[0].strip()]
     if not traits:
         report.fail("ASEF.md", "no traits parsed from the `Project traits` table")
         return
+
+    for row in rows:
+        trait = row[0].strip("`").strip()
+        if len(row) < 3:
+            report.fail("ASEF.md", f"trait `{trait}` row lacks a `Switches on` cell")
+            continue
+        for token, path in sorted(promised_consumers(row[2], root, modules).items()):
+            if f"`{trait}`" not in read(path):
+                report.fail(
+                    path.relative_to(root).as_posix(),
+                    f"ASEF.md promises trait `{trait}` switches on `{token}`, "
+                    "but this file never mentions the trait",
+                )
 
     consumers = {
         "modules/review.md": modules.get("review", ""),
         "modules/qa.md": modules.get("qa", ""),
         "modules/planning.md": modules.get("planning", ""),
+        "modules/ship.md": modules.get("ship", ""),
         "templates/SPEC.template.md": read(root / "templates" / "SPEC.template.md"),
         "templates/PLAN.template.md": read(root / "templates" / "PLAN.template.md"),
     }
@@ -398,7 +485,36 @@ def check_traits(root: Path, modules: dict[str, str], report: Report) -> None:
                 + ", ".join(consumers),
             )
 
-    report.ok(f"traits ({len(traits)} declared, each with a consumer)")
+    report.ok(f"traits ({len(traits)} declared, each with its promised consumers)")
+
+
+def check_risk_classes(root: Path, modules: dict[str, str], report: Report) -> None:
+    """ASEF.md: every risk class has a threat pass in review, a declaration
+    slot in the task template, and generic consumers in planning and qa."""
+    asef = read(root / "ASEF.md")
+    classes = [c for c in table_first_column(section(asef, "Risk classes")) if c]
+    if not classes:
+        report.fail("ASEF.md", "no risk classes parsed from the `Risk classes` table")
+        return
+
+    review = modules.get("review", "")
+    task_template = read(root / "templates" / "TASK.template.md")
+    for cls in classes:
+        if f"`{cls}`" not in review:
+            report.fail("modules/review.md", f"risk class `{cls}` has no threat pass")
+        if f"`{cls}`" not in task_template:
+            report.fail(
+                "templates/TASK.template.md",
+                f"risk class `{cls}` cannot be declared: missing from the header line",
+            )
+
+    for name in ("planning", "qa"):
+        if "risk class" not in modules.get(name, ""):
+            report.fail(f"modules/{name}.md", "never consumes the task's risk classes")
+    if "Risk class" not in read(root / "templates" / "PLAN.template.md"):
+        report.fail("templates/PLAN.template.md", "has no per-risk-class trust-boundary row")
+
+    report.ok(f"risk classes ({len(classes)} declared, each with a threat pass)")
 
 
 def check_templates(root: Path, report: Report) -> None:
@@ -415,12 +531,26 @@ def check_templates(root: Path, report: Report) -> None:
         if row not in command_rows:
             report.fail("templates/PROJECT.template.md", f"command row `{row}` was removed")
 
+    env_rows = table_first_column(section(project, "Environments"))
+    for row in PROJECT_ENV_ROWS:
+        if row not in env_rows:
+            report.fail("templates/PROJECT.template.md", f"environment row `{row}` was removed")
+
+    for template, required in sorted(TEMPLATE_SECTIONS.items()):
+        path = root / "templates" / template
+        if not path.is_file():
+            continue  # reported by check_structure
+        present = headings(read(path))
+        for title in required:
+            if title not in present:
+                report.fail(f"templates/{template}", f"mandatory section `{title}` was removed")
+
     state = read(root / "templates" / "STATE.template.md")
     for label in ROUTE_NAMES:
         if label not in state:
             report.fail("templates/STATE.template.md", f"intent `{label}` missing from Intent line")
 
-    report.ok("template mandatory rows present")
+    report.ok("template mandatory rows and sections present")
 
 
 def check_artifacts(root: Path, report: Report) -> None:
@@ -499,6 +629,60 @@ def check_references(root: Path, report: Report) -> None:
     report.ok("cross-references resolve")
 
 
+def check_prompt_alignment(root: Path, report: Report) -> None:
+    """The activation prompt names every route, trait and label the kernel
+    defines; a name missing there is a rule the user can never invoke."""
+    prompt = read(root / ACTIVATION_PROMPT)
+    asef = read(root / "ASEF.md")
+    traits = [t for t in table_first_column(section(asef, "Project traits")) if t]
+    classes = [c for c in table_first_column(section(asef, "Risk classes")) if c]
+
+    expectations = [
+        ("route", ROUTE_NAMES, "{}"),
+        ("trait", traits, "`{}`"),
+        ("risk class", classes, "`{}`"),
+        ("gap label", GAP_LABELS, "`{}`"),
+        ("evidence label", EVIDENCE_LABELS, "`{}`"),
+    ]
+    for kind, names, fmt in expectations:
+        for name in names:
+            if fmt.format(name) not in prompt:
+                report.fail(ACTIVATION_PROMPT, f"never names {kind} `{name}`")
+
+    for path in ("asef/ASEF.md", "asef/ROUTER.md", "asef/modules/ship.md"):
+        if f"`{path}`" not in prompt:
+            report.fail(ACTIVATION_PROMPT, f"does not point the agent at `{path}`")
+
+    report.ok("activation prompt aligned with the kernel")
+
+
+def check_budget(root: Path, modules: dict[str, str], report: Report) -> None:
+    """Compression is the point: ceilings on what gets loaded into context."""
+    kernel_tokens = sum(estimated_tokens(read(root / n)) for n in KERNEL_FILES)
+    if kernel_tokens > BUDGETS["kernel"]:
+        report.fail(
+            "kernel", f"~{kernel_tokens} tokens exceeds the {BUDGETS['kernel']} budget"
+        )
+
+    for name, text in sorted(modules.items()):
+        tokens = estimated_tokens(text)
+        if tokens > BUDGETS["module"]:
+            report.fail(
+                f"modules/{name}.md", f"~{tokens} tokens exceeds the {BUDGETS['module']} budget"
+            )
+
+    prompt_tokens = estimated_tokens(read(root / ACTIVATION_PROMPT))
+    if prompt_tokens > BUDGETS["prompt"]:
+        report.fail(
+            ACTIVATION_PROMPT, f"~{prompt_tokens} tokens exceeds the {BUDGETS['prompt']} budget"
+        )
+
+    report.ok(
+        f"token budget (kernel ~{kernel_tokens}, largest module "
+        f"~{max(estimated_tokens(t) for t in modules.values())}, prompt ~{prompt_tokens})"
+    )
+
+
 def check_single_home(root: Path, modules: dict[str, str], report: Report) -> None:
     """CLAUDE.md: each rule lives in one kernel file; modules reference it."""
     ladder = "known → inferable"
@@ -531,11 +715,14 @@ def run(root: Path, verbose: bool) -> int:
         check_module_next(modules, report)
         check_router_graph(root, modules, report)
         check_traits(root, modules, report)
+        check_risk_classes(root, modules, report)
         check_single_home(root, modules, report)
+        check_budget(root, modules, report)
     check_templates(root, report)
     check_artifacts(root, report)
     check_version(root, report)
     check_references(root, report)
+    check_prompt_alignment(root, report)
 
     if verbose:
         for name in report.checks:

@@ -28,7 +28,7 @@ Detailed implementation plans or unrelated future ideas.
 1. Define the user outcome and the end-to-end moment of value.
 2. Build the gap ledger and resolve `RESEARCHABLE` gaps through `research` before fixing scope.
 3. Separate must-have behavior from enhancements and non-goals.
-4. Prefer a narrow complete wedge over a broad partial platform.
+4. Prefer a narrow complete wedge over a broad partial platform; compare it with doing nothing and with the closest existing product. A wedge that beats neither is not useful.
 5. Apply the narrowness check once: is this the narrowest **useful** outcome, or merely the narrowest? Widen only when the smaller version cannot be observed as valuable by its user.
 6. Test scope against success, constraints and operational reality.
 7. Resolve reversible choices automatically; escalate only gaps passing the promotion test.

@@ -4,9 +4,9 @@
      newest first. When a decision needs full context, alternatives and
      rationale, open a record from `DECISION.template.md` and link it in Ref. -->
 
-| ID | Date | Decision | Rationale | Reversibility | Revisit when | Ref |
-|---|---|---|---|---|---|---|
-| D-001 |  |  |  | `Trivial \| Reversible \| Expensive \| One-way` |  |  |
+| ID | Date | Decision | Alternatives rejected | Rationale | Reversibility | Revisit when | Ref |
+|---|---|---|---|---|---|---|---|
+| D-001 |  |  |  |  | `Trivial \| Reversible \| Expensive \| One-way` |  |  |
 
 ## Superseded
 

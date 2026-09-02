@@ -1,5 +1,45 @@
 # Changelog
 
+## 1.5
+
+Memory, portability, enforcement.
+
+- `LEARNINGS.md` core artifact with template: pitfalls, quirks and command fixes; read at runtime step 2; route metrics gain a consumer (two escalations or a repeated question round write an entry). `diagnose`, `review`, `qa`, `ship` consult it.
+- `RESEARCH.md` core artifact with template: the resolved gap ledger `research` deduplicates against; revisit triggers checked at route start, required to be concrete.
+- `PROJECT.md` Domain Terms table; artifacts, identifiers and questions use the terms verbatim.
+- `templates/AGENTS.template.md`: activation block for the target project's `AGENTS.md`/`CLAUDE.md`, so sessions resume without pasting the prompt.
+- `SPEC.md` UI section, switched on by `ui`; `review` checks against it and flags generic template patterns.
+- Version control section in `ASEF.md`: branch per route, one commit per task, no history rewrite, release actions only in `ship`; `CONTEXT-MANAGER.md` defines parallel contexts and the single `STATE.md` writer.
+- Documentation currency enters the Definition of Done.
+- Activation prompt: `browser` and `git` capability rows, `Azioni umane` in the first output, release authorizations in the request block, `HUMAN-ACTION` label.
+- Linter: promised trait consumers, risk-class consumers, mandatory template sections and environment rows, prompt ↔ kernel alignment for routes, traits and labels, per-file token budgets. Six new mutation tests.
+- README and CLAUDE.md updated: eight routes, thirteen modules, nine templates, budgets.
+
+## 1.4
+
+Decisions, evidence, security.
+
+- Risk classes (`auth`, `payments`, `tenant`, `pii`, `migration`, `concurrency`) declared per task; consumed by `planning` (trust-boundary row), `review` (threat pass with concrete attacker path) and `qa` (`Deep` floor).
+- `research` depth follows the reversibility class; stack, dependency and hosting choices compare on stated criteria.
+- Finding contract in `review`: file, line, quoted code and failure scenario, or it is a note and opens no fix cycle; axes run in isolated contexts when available.
+- `diagnose`: rerunnable reproduction before any fix; three rejected hypotheses escalate; edits confined to the traced path.
+- `DECISION-ENGINE.md`: `Expensive` and `One-way` decisions record alternatives including no change; `DECISION.template.md` gains Alternatives Considered, `DECISIONS.template.md` the column.
+- `product-scope` compares the wedge with doing nothing and the closest existing product.
+- Evidence freshness in `ARTIFACTS.md`: command, result and tree; evidence older than the last code change is stale. `STATE.md` records the tree verified.
+- `slicing`: expand, migrate, contract for wide mechanical changes; risk classes per task.
+
+## 1.3
+
+Release.
+
+- `modules/ship.md`: authorized-scope release with base sync, fresh evidence, bounded change set, docs and changelog, commit and pull request, rollout with post-deploy verification and rollback.
+- `RELEASE` route (`qa? → ship → DONE`); `ship?` after `qa` on every implementing route; `qa` and `ship` Next agree with the graph.
+- `HUMAN-ACTION` gap label: steps only the user can perform, delivered once as an instruction block; `PLAN.md` Human Actions table, task header field, `implementation` blocks only the dependent steps.
+- `PROJECT.md` Environments table, mandatory with `deployed`.
+- Rendered-surface QA under `ui` when a browser exists; without one, criteria stay `OPEN`.
+- Trait table promises now name their consumers: `persistence` and `deployed` reach `PLAN.md`, `planning` and `ship`; NFR rows carry the trait they are tied to.
+- Activation prompt invariant 9 names the three traits with a review axis instead of "one per trait".
+
 ## 1.2
 
 - `tools/asef_lint.py`: consistency linter for the invariants the documents promise each other — module contract, router graph vs module `Next`, trait consumers, mandatory template rows, artifact/template pairing, version alignment, cross-references, single-home rule.

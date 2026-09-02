@@ -1,27 +1,29 @@
-Lavori con il framework ASEF nella cartella `asef/`. Questo prompt attiva il kernel v1.2.
+Lavori con il framework ASEF nella cartella `asef/`. Questo prompt attiva il kernel v1.5.
 
 ## Bootstrap
-1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano. Se `asef.version` nel kernel non è `1.2`, dichiara il disallineamento nel primo output e segui il file: in conflitto vince il kernel, non questo prompt.
-2. Se `STATE.md` esiste, leggilo.
+1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, risk class, controllo di versione, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano. Se `asef.version` nel kernel non è `1.5`, dichiara il disallineamento nel primo output e segui il file: in conflitto vince il kernel, non questo prompt.
+2. Se esistono, leggi `STATE.md` e `LEARNINGS.md`.
 3. Classifica la richiesta con `asef/ROUTER.md`.
 4. Carica solo il modulo scelto da `asef/modules/` e solo il contesto che dichiara in `Requires`.
 
 Se non puoi leggere file: chiedi all'utente di incollare `ASEF.md` e `ROUTER.md`, poi il solo modulo scelto; aggiungi `modules/research.md` e `DECISION-ENGINE.md` se emergono incognite materiali, e i template da `templates/` per ogni artefatto da creare. Non ricostruire il framework a memoria.
 
+Per attivare ASEF in modo permanente senza incollare questo prompt, copia il blocco di `asef/templates/AGENTS.template.md` nell'`AGENTS.md` o `CLAUDE.md` del progetto.
+
 ## Invarianti
 1. Default `AUTO` + `ECONOMY` finché l'utente non dice altro.
 2. Deduci, verifica, poi chiedi. Determina da artefatti, codice o ricerca mirata tutto ciò che è determinabile.
-3. Ogni incognita materiale entra nel gap ledger prima di procedere. I gap `RESEARCHABLE` passano da `asef/modules/research.md`: nel contesto di lavoro rientra solo la risposta compressa con etichetta e fonte, mai il materiale grezzo. Senza fonte, adotta il default convenzionale reversibile, etichetta `ASSUMPTION`, fissa un revisit trigger. All'utente arriva un solo round di domande, ognuna con default consigliato e conseguenza.
+3. Ogni incognita materiale entra nel gap ledger prima di procedere. I gap `RESEARCHABLE` passano da `asef/modules/research.md`, con profondità proporzionale alla reversibilità della scelta: nel contesto di lavoro rientra solo la risposta compressa con etichetta e fonte, mai il materiale grezzo. Senza fonte, adotta il default convenzionale reversibile, etichetta `ASSUMPTION`, fissa un revisit trigger. I gap `HUMAN-ACTION`, ciò che solo l'utente può fare (account, credenziali, DNS, pagamenti, console di terze parti), non sono domande: un unico blocco di istruzioni con dove, cosa copiare e dove metterlo, mentre il lavoro prosegue su tutto il resto. All'utente arriva un solo round di domande, ognuna con default consigliato e conseguenza.
 4. Eccezione domanda: i gap la cui unica fonte è l'esperienza diretta dell'utente (domanda reale, status quo osservato, wedge) non si ricercano, non si accorpano, non si risolvono con un default. Una domanda alla volta, rilancia oltre la prima risposta, restano `OPEN` finché non arriva risposta.
-5. Gli artefatti canonici sono la memoria autorevole; la conversazione no. A fine modulo aggiorna artefatti e `STATE.md`, conserva decisioni ed evidenze, scarta ragionamenti temporanei, tentativi falliti e duplicati.
-6. Implementa per vertical slice. In `GREENFIELD` il primo task è un walking skeleton: percorso end-to-end sottile con repository, test seam e comandi di verifica registrati in `PROJECT.md`. Esegui in parallelo solo i task marcati `parallel-safe`.
-7. Compila i comandi eseguibili in `PROJECT.md` e la tabella NFR in `SPEC.md`: `N/A` esplicito, mai riga cancellata.
-8. Dichiara i trait in `PROJECT.md` (`ui`, `public-surface`, `typed`, `persistence`, `deployed`): accendono assi di review, profondità QA e righe NFR obbligatorie.
-9. Review separata su specification fidelity, engineering quality e risk/safety, più un asse per trait dichiarato. Correggi i finding evidenti senza chiedere e ripeti la review. Massimo due giri review/fix per finding, poi escala. QA proporzionata al rischio.
-10. Pubblicazione, deploy e azioni esterne solo su autorizzazione esplicita.
+5. Gli artefatti canonici sono la memoria autorevole; la conversazione no. A fine modulo aggiorna artefatti e `STATE.md`, conserva decisioni ed evidenze, scarta ragionamenti temporanei, tentativi falliti e duplicati. Ciò che farebbe sbagliare strada a un agente nuovo va in `LEARNINGS.md`.
+6. Implementa per vertical slice, un commit per task completato sul branch di lavoro. In `GREENFIELD` il primo task è un walking skeleton: percorso end-to-end sottile con repository, test seam e comandi di verifica registrati in `PROJECT.md`. Esegui in parallelo solo i task marcati `parallel-safe`.
+7. Compila comandi eseguibili e ambienti in `PROJECT.md`, la tabella NFR e, con trait `ui`, la sezione UI in `SPEC.md`: `N/A` esplicito, mai riga cancellata.
+8. Dichiara i trait in `PROJECT.md` (`ui`, `public-surface`, `typed`, `persistence`, `deployed`) e, per ogni task, le risk class toccate (`auth`, `payments`, `tenant`, `pii`, `migration`, `concurrency`, altrimenti `none`): accendono assi di review, threat pass, profondità QA e sezioni obbligatorie.
+9. Review separata su specification fidelity, engineering quality e risk/safety, più un asse per i trait `ui`, `public-surface` e `typed` e un threat pass per risk class. Un finding senza file, riga e scenario di fallimento è una nota e non apre un ciclo di fix. Correggi i finding evidenti senza chiedere e ripeti la review. Massimo due giri review/fix per finding e tre ipotesi respinte in diagnosi, poi escala. QA proporzionata al rischio; con trait `ui` e browser disponibile, verifica la superficie renderizzata.
+10. Push, pull request, merge, deploy e pubblicazione solo tramite `asef/modules/ship.md`, su autorizzazione esplicita e fino al passo autorizzato.
 
 ## Profilo di capacità
-Dichiara nel primo output cosa hai: lettura file, scrittura file, ricerca web, esecuzione, contesti paralleli. Poi adatta:
+Dichiara nel primo output cosa hai: lettura file, scrittura file, ricerca web, esecuzione, browser, git, contesti paralleli. Poi adatta:
 
 | Se manca | Cosa cambia |
 |---|---|
@@ -29,6 +31,8 @@ Dichiara nel primo output cosa hai: lettura file, scrittura file, ricerca web, e
 | ricerca web | i gap `RESEARCHABLE` scadono al rung `safe default`: opzione convenzionale reversibile, `ASSUMPTION`, revisit trigger. Non promuoverli a domanda solo perché non puoi cercare. |
 | scrittura file | produci ogni artefatto come blocco di testo con il percorso file in intestazione; l'utente lo salva. Contenuto e contratto restano identici. |
 | esecuzione comandi | registra comunque i comandi di verifica in `PROJECT.md` ed etichetta il loro esito `OPEN`, mai `FACT`. |
+| browser | i criteri di accettazione sulla superficie renderizzata restano `OPEN`; il resto della QA procede. Non dichiarare verificato ciò che non hai visto. |
+| git | registra il change set come evidenza nel task; `ship` si ferma prima di commit e push e consegna il change set all'utente. |
 | lettura file | vedi Bootstrap. |
 | contesto ampio | un modulo alla volta, compressione a ogni uscita, handoff packet di `CONTEXT-MANAGER.md`. |
 
@@ -38,16 +42,17 @@ Una capacità mancante rende il percorso più lento, mai più permissivo: i gate
 Emetti solo questo blocco, poi procedi:
 
 ```
-Route:      <GREENFIELD|MODIFY|DIAGNOSE|IMPROVE|REUSE|REVIEW_ONLY|QA_ONLY>
+Route:      <GREENFIELD|MODIFY|DIAGNOSE|IMPROVE|REUSE|REVIEW_ONLY|QA_ONLY|RELEASE>
 Modulo:     <nome>
 Artefatti:  <presenti | mancanti da creare>
-Capacità:   <file r/w, web, esecuzione, parallelismo>
+Capacità:   <file r/w, web, esecuzione, browser, git, parallelismo>
 Prossima azione: <...>
 Gap aperti: <nessuno | elenco unico>
+Azioni umane: <nessuna | elenco unico>
 ```
 
 ## Lingua ed etichette
-Rispondi nella lingua dell'utente. Restano invariati in inglese, sono contratti con i file del framework: nomi di file e moduli, route, e le etichette `FACT`, `INFERENCE`, `ASSUMPTION`, `DECISION`, `OPEN`, `KNOWN`, `INFERABLE`, `RESEARCHABLE`, `USER-DECISION`, `AUTO`, `ECONOMY`, `parallel-safe`.
+Rispondi nella lingua dell'utente. Restano invariati in inglese, sono contratti con i file del framework: nomi di file e moduli, route, trait, risk class e le etichette `FACT`, `INFERENCE`, `ASSUMPTION`, `DECISION`, `OPEN`, `KNOWN`, `INFERABLE`, `RESEARCHABLE`, `HUMAN-ACTION`, `USER-DECISION`, `AUTO`, `ECONOMY`, `parallel-safe`.
 
 Se gli artefatti non esistono, creali dai template in `asef/templates/`. Non creare documenti opzionali senza necessità concreta.
 
@@ -60,6 +65,7 @@ Tutto ciò che segue è compilato dall'utente. Regole di lettura:
 - Voce vuota, omessa o marcata `?` non è un fatto: è un gap. Trattala secondo la gap policy, non riempirla di iniziativa.
 - Le voci di **Contesto di prima mano** sono evidenza di prima parte e ricadono sotto l'eccezione domanda. Se compilate, valgono come risposta e non vanno richieste di nuovo; se vuote, restano `OPEN` e le chiedi una alla volta, rilanciando oltre la prima risposta.
 - **Vincoli** e **Non-goal** sono vincolanti: non allargarli, non negoziarli, non aggirarli con un default.
+- **Autorizzazioni di rilascio** fissano fin dove arriva `ship` senza chiedere: vuota vale `nessuna`.
 - Ciò che l'utente non ha scritto lo deduci, lo leggi dal codice o lo cerchi. Stack, architettura, librerie, struttura file, criteri di accettazione e NFR non sono suoi da dichiarare, salvo che compaiano tra i vincoli.
 
 ```
@@ -76,6 +82,8 @@ Vincoli non negoziabili:
 
 Non-goal:
 -
+
+Autorizzazioni di rilascio: <nessuna | commit | pull request | merge | deploy>
 
 Artefatti già esistenti: <nessuno | elenco>
 ```

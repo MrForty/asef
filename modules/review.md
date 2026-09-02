@@ -12,13 +12,13 @@ Review independently across specification, engineering and risk; automatically f
 
 ## Requires
 
-- current task and acceptance criteria;
+- current task, its acceptance criteria and declared risk classes;
 - relevant diff or changed artifacts;
 - applicable project conventions.
 
 ## Optional
 
-Relevant plan, specialist review tooling, runtime evidence and adjacent callers.
+Relevant plan, `LEARNINGS.md`, specialist review tooling, runtime evidence and adjacent callers.
 
 ## Do not load
 
@@ -36,11 +36,24 @@ Add one axis per trait declared in `PROJECT.md`, and only those:
 
 | Trait | Axis |
 |---|---|
-| `ui` | Visual hierarchy, state coverage for empty, loading and error, accessibility basics |
+| `ui` | Matches the `SPEC.md` UI section; empty, loading and error states covered; visual hierarchy; accessibility basics; no generic template pattern where the spec chose a specific one |
 | `public-surface` | Surface shape, naming, defaults, error messages, breaking-change exposure, documented seam |
 | `typed` | Types express the contract, illegal states unrepresentable, validation at trust boundaries, escape hatches justified in place |
 
-Rank findings by impact and evidence. Ignore style preferences without consequence. Fix clear authorized findings, rerun focused checks, then re-review the affected axis. Escalate only findings requiring a product decision, new authority or unsafe destructive action.
+Add one threat pass on the risk axis per risk class declared in the task; a candidate without a concrete attacker path is dropped:
+
+| Class | Threat pass |
+|---|---|
+| `auth` | authorization checked per resource, not per route; session fixation and privilege escalation; secrets never logged |
+| `payments` | webhook signature verified; charges idempotent; amount and currency decided server-side; reconciliation path |
+| `tenant` | every query and cache key scoped by tenant; ids not guessable across tenants; background jobs carry tenant context |
+| `pii` | minimization; retention, export and deletion paths; no personal data in logs or analytics |
+| `migration` | reversible; backfill order; dual-read or dual-write window; rollback tested |
+| `concurrency` | idempotent retries; ordering; locks or versions; no duplicate side effect |
+
+When parallel contexts exist, run each axis in its own context and return findings only; never rerank across axes.
+
+A finding names file and line, quotes the code and states the failure scenario; anything less is a note and opens no fix cycle. Rank findings by impact and evidence. Ignore style preferences without consequence. Fix clear authorized findings, rerun focused checks, then re-review the affected axis. Escalate only findings requiring a product decision, new authority or unsafe destructive action.
 
 Under `REVIEW_ONLY` report fixes instead of applying them; applying a fix routes the work to `MODIFY`.
 
@@ -48,7 +61,7 @@ Cap the loop at two fix cycles per finding. A finding surviving the second cycle
 
 ## Exit criteria
 
-- all applicable axes pass, fixed and trait alike;
+- all applicable axes pass, fixed, trait and threat pass alike;
 - no blocking or high-impact finding remains;
 - fixes are verified and re-reviewed;
 - residual limitations are explicit.

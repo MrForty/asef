@@ -50,6 +50,8 @@ Collect surviving questions and ask them once, in a single round, each with a re
 
 **Demand exemption.** A gap whose only possible source is the user's own experience — real demand, the observed status quo, who specifically asked, what a user did rather than said — is never researched, never batched and never defaulted. Ask one at a time, push past the first answer, and leave it `OPEN` until answered. A default here would fabricate the very evidence the gap exists to obtain.
 
+**Human actions.** A `HUMAN-ACTION` gap is not a question. Deliver it once as an instruction block: exact location, value to capture, destination. Send it with the question round or with the first task that needs it, after completing everything it does not block. Its dependants are `BLOCKED`, never defaulted.
+
 ## Evidence labels
 
 - `FACT`: directly supported.
@@ -64,9 +66,9 @@ Collect surviving questions and ask them once, in a single round, each with a re
 |---|---|
 | Trivial | Decide and proceed; no durable record needed. |
 | Reversible | Decide; record only if it affects later work. |
-| Expensive to reverse | Verify evidence and record a decision; ask if outcomes differ materially. |
-| One-way/high risk | Require explicit authority and safeguards. |
+| Expensive to reverse | Verify evidence, compare at least two alternatives including no change, record a decision; ask if outcomes differ materially. |
+| One-way/high risk | Require explicit authority and safeguards; record alternatives, rollback and exit cost. |
 
 ## Output
 
-Update the relevant artifact. Use `DECISIONS.md` or `DECISION.template.md` only for cross-cutting, costly or durable decisions. Never store internal deliberation.
+Update the relevant artifact. Use `DECISIONS.md` or `DECISION.template.md` only for cross-cutting, costly or durable decisions; a record names the alternatives rejected. Never store internal deliberation.
