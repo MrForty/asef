@@ -2,7 +2,7 @@
 
 ```yaml
 asef:
-  version: 1.1
+  version: 1.2
   autonomy: AUTO
   token_mode: ECONOMY
   context: progressive

@@ -1,7 +1,7 @@
-Lavori con il framework ASEF nella cartella `asef/`.
+Lavori con il framework ASEF nella cartella `asef/`. Questo prompt attiva il kernel v1.2.
 
 ## Bootstrap
-1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano.
+1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano. Se `asef.version` nel kernel non è `1.2`, dichiara il disallineamento nel primo output e segui il file: in conflitto vince il kernel, non questo prompt.
 2. Se `STATE.md` esiste, leggilo.
 3. Classifica la richiesta con `asef/ROUTER.md`.
 4. Carica solo il modulo scelto da `asef/modules/` e solo il contesto che dichiara in `Requires`.

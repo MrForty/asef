@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2
+
+- `tools/asef_lint.py`: consistency linter for the invariants the documents promise each other — module contract, router graph vs module `Next`, trait consumers, mandatory template rows, artifact/template pairing, version alignment, cross-references, single-home rule.
+- `tools/test_asef_lint.py`: 15 mutation tests proving the linter catches each class of breakage.
+- CI runs both on every push.
+- `modules/review.md` Next declares the `REVIEW_ONLY` exit at `DONE`; graph and Next agree.
+- `templates/DECISIONS.template.md` added: `ARTIFACTS.md` promised a compact log format and shipped only the full record.
+- `prompt universale ASEF.txt` declares the kernel version it activates and defers to the kernel on mismatch.
+- `README.md` documents purpose, usage, structure and the verification commands.
+
 ## 1.1
 
 - DIAGNOSE: diagnosis-only exit added to the graph, matching `modules/diagnose.md`.

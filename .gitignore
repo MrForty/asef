@@ -1,2 +1,3 @@
 desktop.ini
 *.bak.txt
+__pycache__/

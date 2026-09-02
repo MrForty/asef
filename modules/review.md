@@ -59,4 +59,4 @@ Verified fixes; concise findings only when unresolved or requested; updated task
 
 ## Next
 
-`qa`, or the precise failed upstream gate.
+`qa`; `DONE` under `REVIEW_ONLY`; otherwise the precise failed upstream gate.
