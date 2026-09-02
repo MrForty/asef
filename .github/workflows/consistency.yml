@@ -1,0 +1,22 @@
+name: consistency
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check framework invariants
+        run: python3 tools/asef_lint.py --verbose
+
+      - name: Check the linter still catches breakage
+        run: python3 tools/test_asef_lint.py

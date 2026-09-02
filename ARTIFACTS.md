@@ -17,7 +17,7 @@
 
 Optional artifacts such as `ARCHITECTURE.md`, `RESEARCH.md`, ADRs or a reuse map exist only when their content cannot stay clear in the core artifacts.
 
-Use one `DECISIONS.md` log for compact entries; open a `DECISION.template.md` record when a decision needs full context, alternatives and rationale.
+Use one `DECISIONS.md` log for compact entries, seeded from `DECISIONS.template.md`; open a `DECISION.template.md` record when a decision needs full context, alternatives and rationale.
 
 ## Authority order
 
