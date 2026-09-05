@@ -59,6 +59,8 @@ Blockers:
 
 ## Parallel contexts
 
+Use only capabilities available and permitted by the host. Without delegation, resolve gaps and review axes sequentially, compressing each result. Without web evidence, use only a safe reversible assumption; otherwise leave `OPEN`. Without execution or browser access, required checks stay `OPEN`. Without file writes, return artifacts for saving. Missing capabilities never waive gates. This applies to both activation methods.
+
 One task per context. A parallel context receives its task file and the handoff packet, isolates its changes under the version-control rules in `ASEF.md`, and returns only an evidence packet. The orchestrating context integrates results and is the single writer of `STATE.md`.
 
 ## Exit compression

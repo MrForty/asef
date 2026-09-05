@@ -19,7 +19,7 @@ The folder is designed to be dropped into a target project as `asef/` and activa
 
 ## Architecture
 
-Five kernel documents at the root, loaded in this order, each with a single non-overlapping responsibility:
+Five kernel documents at the root; start with ASEF.md and load the others as its runtime requires:
 
 | File | Owns |
 |---|---|
@@ -44,19 +44,19 @@ Module `Next` fields and the route graphs in `ROUTER.md` must agree. Current wir
 ```
 discovery → product-scope → specification → planning → slicing → implementation → review ⇄ fix → qa → ship? → DONE
 diagnose → implementation (when authorized)
-architecture-improvement → implementation | slicing
+architecture-improvement → planning | implementation | slicing
 reuse-integration → implementation | specification | planning
 review → qa, or the precise failed upstream gate
 qa → DONE | ship when release is requested or authorized | diagnose on failure
 ship → DONE | diagnose when post-release verification fails
 RELEASE: qa? → ship → DONE
 
-research: invoked in place by discovery, product-scope, specification, planning; returns to caller
+research: invoked in place by any module with a researchable gap; returns to caller
 ```
 
 `ship?` is optional by authorization, not by evidence: it runs only when the user requested or pre-authorized a release step (the request block carries `Autorizzazioni di rilascio`). Push, merge, deploy and publication happen nowhere else.
 
-Gap resolution is the one flow that is not a graph edge: a module builds the gap ledger, sends `RESEARCHABLE` entries to `research` as a single parallel fan-out at the depth their reversibility class requires, batches `HUMAN-ACTION` entries into one instruction block, and only gaps passing that module's promotion test reach the user — batched into one question round. Raw research never enters the calling context; only the answer packet does, and its row lands in `RESEARCH.md` so later routes deduplicate and check revisit triggers. Changing the promotion test, the depth table or the termination rule in [modules/research.md](modules/research.md) changes how often the framework interrupts the user, so treat all three as load-bearing.
+Gap resolution is the one flow that is not a graph edge: a module builds the gap ledger, sends `RESEARCHABLE` entries to `research` at the depth their reversibility class requires, with capability fallbacks from `CONTEXT-MANAGER.md`, batches `HUMAN-ACTION` entries into one instruction block, and only gaps passing that module's promotion test reach the user — batched into one question round. Raw research never enters the calling context; only the answer packet does, and its row lands in `RESEARCH.md` so later routes deduplicate and check revisit triggers. Changing the promotion test, the depth table or the termination rule in [modules/research.md](modules/research.md) changes how often the framework interrupts the user, so treat all three as load-bearing.
 
 Changing a `Next` in a module means updating `ROUTER.md`, and vice versa — `tools/asef_lint.py` fails the build when they disagree, including the optional-node runs marked `?`. Backtracking is targeted: return only to the gate that failed, never restart the route.
 
@@ -77,8 +77,4 @@ Note the deliberate asymmetry it balances: every gate here can only remove scope
 - **Template rows and sections are mandatory.** The NFR table in `SPEC.template.md`, the command and environment tables in `PROJECT.template.md`, and the sections the linter lists per template (UI, Human Actions, Alternatives Considered, Domain Terms, …) are filled or marked `N/A`; deleting one to dodge the question is the failure this framework exists to prevent.
 - **Bumping the kernel means bumping three files.** `asef.version` in `ASEF.md`, the `kernel vX.Y` line in `prompt universale ASEF.txt`, and a new top entry in `CHANGELOG.md`. The linter fails on any mismatch; the activation prompt defers to the kernel when it finds one.
 - **`prompt universale ASEF.txt` loads the kernel, it does not mirror it.** It carries only what cannot be discovered before `ASEF.md` is read: bootstrap order, the invariants, a capability-degradation table, the first-output block, the label-language rule, and the user request template (including the release authorizations `ship` honours). Rules owned by a kernel file are referenced there, never restated — re-summarising the gap policy or the fan-out mechanics in this file is the duplication the framework forbids. Update it when defaults, the runtime order, the traits, the risk classes or the review axes change in `ASEF.md`. `templates/AGENTS.template.md` is the same idea at minimum size: a pointer to the kernel, never a second copy of its rules.
-- **The capability table is the portability contract.** A missing capability (no subagents, no web, no file writes, no execution, no browser, no git) changes the path, never the gates. Adding a step that silently requires a capability means adding its degraded form to that table.
-
-## Inherited instructions
-
-A parent `CLAUDE.md` at `../CLAUDE.md` describes an unrelated WAT (Workflows/Agents/Tools) framework with `tools/`, `workflows/`, and `.tmp/` directories. That structure does not exist here and does not apply to ASEF work; ASEF's own runtime in `ASEF.md` governs this folder.
+- **The capability fallbacks in `CONTEXT-MANAGER.md` are the shared portability contract.** A missing capability (no subagents, no web, no file writes, no execution, no browser, no git) changes the path, never the gates. Keep the activation prompt table aligned with those fallbacks; neither activation method may silently require a capability.

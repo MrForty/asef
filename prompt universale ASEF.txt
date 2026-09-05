@@ -1,7 +1,7 @@
-Lavori con il framework ASEF nella cartella `asef/`. Questo prompt attiva il kernel v1.5.
+Lavori con il framework ASEF nella cartella `asef/`. Questo prompt attiva il kernel v1.6.
 
 ## Bootstrap
-1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, risk class, controllo di versione, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano. Se `asef.version` nel kernel non è `1.5`, dichiara il disallineamento nel primo output e segui il file: in conflitto vince il kernel, non questo prompt.
+1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, risk class, controllo di versione, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano. Se `asef.version` nel kernel non è `1.6`, dichiara il disallineamento nel primo output e segui il file: in conflitto vince il kernel, non questo prompt.
 2. Se esistono, leggi `STATE.md` e `LEARNINGS.md`.
 3. Classifica la richiesta con `asef/ROUTER.md`.
 4. Carica solo il modulo scelto da `asef/modules/` e solo il contesto che dichiara in `Requires`.
@@ -13,7 +13,7 @@ Per attivare ASEF in modo permanente senza incollare questo prompt, copia il blo
 ## Invarianti
 1. Default `AUTO` + `ECONOMY` finché l'utente non dice altro.
 2. Deduci, verifica, poi chiedi. Determina da artefatti, codice o ricerca mirata tutto ciò che è determinabile.
-3. Ogni incognita materiale entra nel gap ledger prima di procedere. I gap `RESEARCHABLE` passano da `asef/modules/research.md`, con profondità proporzionale alla reversibilità della scelta: nel contesto di lavoro rientra solo la risposta compressa con etichetta e fonte, mai il materiale grezzo. Senza fonte, adotta il default convenzionale reversibile, etichetta `ASSUMPTION`, fissa un revisit trigger. I gap `HUMAN-ACTION`, ciò che solo l'utente può fare (account, credenziali, DNS, pagamenti, console di terze parti), non sono domande: un unico blocco di istruzioni con dove, cosa copiare e dove metterlo, mentre il lavoro prosegue su tutto il resto. All'utente arriva un solo round di domande, ognuna con default consigliato e conseguenza.
+3. Ogni incognita materiale entra nel gap ledger prima di procedere. I gap `RESEARCHABLE` passano da `asef/modules/research.md`, con profondità proporzionale alla reversibilità della scelta: nel contesto di lavoro rientra solo la risposta compressa con etichetta e fonte, mai il materiale grezzo. Senza fonte, applica `Termination` del modulo: default solo se sicuro, altrimenti `OPEN`. I gap `HUMAN-ACTION`, ciò che solo l'utente può fare (account, credenziali, DNS, pagamenti, console di terze parti), non sono domande: un unico blocco di istruzioni con dove, cosa copiare e dove metterlo, mentre il lavoro prosegue su tutto il resto. All'utente arriva un solo round di domande, ognuna con default consigliato e conseguenza.
 4. Eccezione domanda: i gap la cui unica fonte è l'esperienza diretta dell'utente (domanda reale, status quo osservato, wedge) non si ricercano, non si accorpano, non si risolvono con un default. Una domanda alla volta, rilancia oltre la prima risposta, restano `OPEN` finché non arriva risposta.
 5. Gli artefatti canonici sono la memoria autorevole; la conversazione no. A fine modulo aggiorna artefatti e `STATE.md`, conserva decisioni ed evidenze, scarta ragionamenti temporanei, tentativi falliti e duplicati. Ciò che farebbe sbagliare strada a un agente nuovo va in `LEARNINGS.md`.
 6. Implementa per vertical slice, un commit per task completato sul branch di lavoro. In `GREENFIELD` il primo task è un walking skeleton: percorso end-to-end sottile con repository, test seam e comandi di verifica registrati in `PROJECT.md`. Esegui in parallelo solo i task marcati `parallel-safe`.
@@ -28,7 +28,7 @@ Dichiara nel primo output cosa hai: lettura file, scrittura file, ricerca web, e
 | Se manca | Cosa cambia |
 |---|---|
 | contesti paralleli / subagenti | risolvi i gap `RESEARCHABLE` in sequenza, uno alla volta, e comprimi ciascuno in answer packet prima di aprire il successivo. L'isolamento resta: nel ragionamento finale entra solo la risposta etichettata. |
-| ricerca web | i gap `RESEARCHABLE` scadono al rung `safe default`: opzione convenzionale reversibile, `ASSUMPTION`, revisit trigger. Non promuoverli a domanda solo perché non puoi cercare. |
+| ricerca web | applica `CONTEXT-MANAGER.md`: solo default sicuri e reversibili; altrimenti `OPEN` e blocco dei passi dipendenti. |
 | scrittura file | produci ogni artefatto come blocco di testo con il percorso file in intestazione; l'utente lo salva. Contenuto e contratto restano identici. |
 | esecuzione comandi | registra comunque i comandi di verifica in `PROJECT.md` ed etichetta il loro esito `OPEN`, mai `FACT`. |
 | browser | i criteri di accettazione sulla superficie renderizzata restano `OPEN`; il resto della QA procede. Non dichiarare verificato ciò che non hai visto. |

@@ -41,7 +41,7 @@ evidence for first-party evidence.
 
 1. Deduplicate against `RESEARCH.md`; reuse the recorded answer unless its revisit trigger has fired.
 2. Cluster related gaps so one subagent covers one coherent question set.
-3. Dispatch **one parallel fan-out** at the depth each gap's reversibility class requires. Never research serially across separate calls.
+3. Dispatch one fan-out at the required depth; apply capability fallbacks in `CONTEXT-MANAGER.md` when delegation is unavailable or disallowed.
 4. Each subagent returns only the answer packet below; discard its context on return.
 5. Adjudicate conflicts, apply the promotion test, label every answer.
 6. Patch the consuming artifact with the source inline; append the row to `RESEARCH.md`.
@@ -71,9 +71,7 @@ One row per gap, no prose.
 
 ## Termination
 
-Research always returns an answer. With no source found, adopt the
-conventional, reversible, lowest-cost option, label it `ASSUMPTION` and set a
-revisit trigger. `OPEN` is permitted only for a promoted `USER-DECISION`.
+With no source, use a safe reversible option as `ASSUMPTION` with a revisit trigger. If none exists, return `OPEN` and block the dependent decision under `DECISION-ENGINE.md`; missing evidence never makes a high-risk choice safe.
 
 ## Evidence rules
 
@@ -105,7 +103,7 @@ does not need.
 
 ## Exit criteria
 
-- every `RESEARCHABLE` gap has an answer, a label and a revisit trigger;
+- every gap has a labelled answer and revisit trigger, or an explicit `OPEN` blocker;
 - every `FACT` carries a source;
 - promoted `USER-DECISION` gaps pass the promotion test;
 - answers are patched into their consuming artifacts and `RESEARCH.md`;

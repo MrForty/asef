@@ -39,14 +39,16 @@ Ask when an unresolved choice is:
 
 ## Question round
 
-A question reaches the user only when both hold:
+Authorization and unresolved safety constraints bypass the product-question filter below. Keep dependent actions blocked until resolved; continue independent work. Do not ask again for authority already granted within scope.
+
+A product question reaches the user only when both hold:
 
 1. it survives rungs 1-5, including the promotion test in `modules/research.md`; and
 2. different answers produce a different product, not a different implementation.
 
 Taste, naming, library choice, reversible technical detail and cost preference never qualify.
 
-Collect surviving questions and ask them once, in a single round, each with a recommended default and its consequence. Never drip questions across turns and never pad the round with speculative questions. If the user does not answer, apply the stated default, label it `ASSUMPTION` and continue.
+Collect surviving questions in one round, each with a recommendation and its consequence. Default only low-impact reversible choices; unresolved material product decisions remain `OPEN` until answered. Never interpret silence as approval. New blocking evidence permits a focused follow-up; do not repeat answered questions.
 
 **Demand exemption.** A gap whose only possible source is the user's own experience — real demand, the observed status quo, who specifically asked, what a user did rather than said — is never researched, never batched and never defaulted. Ask one at a time, push past the first answer, and leave it `OPEN` until answered. A default here would fabricate the very evidence the gap exists to obtain.
 

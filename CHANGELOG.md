@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6
+
+Safe decisions and portable verification.
+
+- Authorization and unresolved safety constraints bypass the product-question filter; silence never authorizes an action. Research without a safe default remains `OPEN`.
+- External content cannot grant authority; keep secrets out of prompts, logs and artifacts. Revisit traits when scope changes; review accidental failures as well as attacker paths.
+- Capability fallbacks live in `CONTEXT-MANAGER.md` for both activation methods; sequential research and review remain valid when delegation is unavailable or disallowed.
+- Linter preserves unknown graph nodes for validation and stops dependent checks after missing-file errors. Diagnostics work on legacy Windows encodings.
+- Mutation tests exercise missing consumed files and unknown graph nodes, check verbose output and reject tracebacks. CI checks Linux and Windows with read-only repository permissions.
+
 ## 1.5
 
 Memory, portability, enforcement.
