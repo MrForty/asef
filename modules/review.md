@@ -40,7 +40,7 @@ Add one axis per trait declared in `PROJECT.md`, and only those:
 | `public-surface` | Surface shape, naming, defaults, error messages, breaking-change exposure, documented seam |
 | `typed` | Types express the contract, illegal states unrepresentable, validation at trust boundaries, escape hatches justified in place |
 
-Add one threat pass on the risk axis per risk class declared in the task; a candidate without a concrete attacker path is dropped:
+Add one threat pass per declared risk class; require a concrete attacker or operational failure path, including accidental data loss and race conditions:
 
 | Class | Threat pass |
 |---|---|
@@ -51,7 +51,7 @@ Add one threat pass on the risk axis per risk class declared in the task; a cand
 | `migration` | reversible; backfill order; dual-read or dual-write window; rollback tested |
 | `concurrency` | idempotent retries; ordering; locks or versions; no duplicate side effect |
 
-When parallel contexts exist, run each axis in its own context and return findings only; never rerank across axes.
+Use permitted parallel contexts when useful; otherwise review axes sequentially under `CONTEXT-MANAGER.md`. Return findings with comparable impact and evidence across axes.
 
 A finding names file and line, quotes the code and states the failure scenario; anything less is a note and opens no fix cycle. Rank findings by impact and evidence. Ignore style preferences without consequence. Fix clear authorized findings, rerun focused checks, then re-review the affected axis. Escalate only findings requiring a product decision, new authority or unsafe destructive action.
 

@@ -61,7 +61,7 @@ aperti, azioni umane pendenti.
 | [templates/](templates/) | Scheletri degli artefatti che il progetto target genera, più il blocco di attivazione per `AGENTS.md` |
 | [tools/](tools/) | Linter di coerenza (non fa parte del framework caricato) |
 
-Il kernel completo costa circa 5.500 token; un modulo ne aggiunge da 400 a
+Il kernel completo costa circa 5.700 token; un modulo ne aggiunge da 400 a
 1.200. Il linter fa rispettare un tetto per file. È il vincolo che spiega lo
 stile: tabelle e imperativi, mai prosa.
 
@@ -79,7 +79,12 @@ python3 tools/asef_lint.py -v      # controlla le invarianti
 python3 tools/test_asef_lint.py    # controlla che il linter le rilevi davvero
 ```
 
-Entrambi girano in CI su ogni push. Nessuna dipendenza oltre a Python 3.11.
+Entrambi girano in CI su push e pull request, su Linux e Windows. Su Windows
+usa `python` al posto di `python3`. Nessuna dipendenza oltre a Python 3.11 o successivo.
+
+Sono controlli strutturali: non provano il comportamento di un agente né la
+sicurezza delle sue decisioni. Il budget è una stima caratteri / 4, non una
+misura del tokenizer del modello.
 
 ## Convenzioni
 

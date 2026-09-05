@@ -21,8 +21,8 @@
 `ui` `public-surface` `typed` `persistence` `deployed`
 
 <!-- Keep the traits that apply, delete the rest. Traits switch on review axes,
-     QA depth, template sections and mandatory NFR rows. An undeclared trait is
-     never reviewed. -->
+     QA depth, template sections and mandatory NFR rows. Revisit when scope
+     changes; missing declarations never waive safety checks. -->
 
 ## Technical Baseline
 

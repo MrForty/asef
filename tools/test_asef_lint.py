@@ -87,6 +87,31 @@ def desync_prompt_version(work: Path) -> None:
 # (label, mutation, substring the linter output must contain)
 CASES: list[tuple[str, Callable[[Path], None], str]] = [
     (
+        "graph: bare optional marker reports without traceback",
+        mutate("ROUTER.md", "review → DONE", "review → ? → DONE"),
+        "has no module file",
+    ),
+    (
+        "structure: missing kernel reports without traceback",
+        drop_file("ROUTER.md"),
+        "missing `ROUTER.md`",
+    ),
+    (
+        "structure: missing consumed template reports without traceback",
+        drop_file("templates/SPEC.template.md"),
+        "missing template `templates/SPEC.template.md`",
+    ),
+    (
+        "graph: unknown intermediate node is not discarded",
+        mutate("ROUTER.md", "review → DONE", "review → nonexistent → DONE"),
+        "graph node `nonexistent` has no module file",
+    ),
+    (
+        "graph: unknown optional node is not discarded",
+        mutate("ROUTER.md", "review → DONE", "review → nonexistent? → DONE"),
+        "graph node `nonexistent` has no module file",
+    ),
+    (
         "module contract: section removed",
         mutate("modules/qa.md", "## Exit criteria", "## Exit criteriaX"),
         "modules/qa.md",
@@ -204,7 +229,8 @@ CASES: list[tuple[str, Callable[[Path], None], str]] = [
 
 def run_linter(work: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, str(work / LINTER)], capture_output=True, text=True
+        [sys.executable, str(work / LINTER), "--verbose"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
 
 
@@ -226,10 +252,10 @@ def main() -> int:
             work = fresh_copy(tmp)
             apply(work)
             result = run_linter(work)
-            caught = result.returncode == 1 and expected in result.stdout
+            caught = result.returncode == 1 and expected in result.stdout and not result.stderr
             print(f"{'PASS' if caught else 'FAIL'}  {label}")
             if not caught:
-                failures.append(f"{label}\nexit {result.returncode}\n{result.stdout.strip()}")
+                failures.append(f"{label}\nexit {result.returncode}\n{result.stdout.strip()}\n{result.stderr.strip()}")
 
         work = fresh_copy(tmp)
         result = run_linter(work)
