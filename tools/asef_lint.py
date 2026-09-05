@@ -287,9 +287,7 @@ def check_module_contract(modules: dict[str, str], report: Report) -> None:
     report.ok("module contract (10 sections, ordered, valid MODE)")
 
 
-def parse_routes(
-    router_text: str, known_nodes: set[str]
-) -> tuple[dict[str, list[list[str]]], set[str]]:
+def parse_routes(router_text: str) -> tuple[dict[str, list[list[str]]], set[str]]:
     """Route graphs from ROUTER.md as {route: [path, ...]}.
 
     A path is the ordered node sequence of one graph line; `?` marks an optional
@@ -340,9 +338,7 @@ def parse_routes(
             token = token.rstrip("?").strip()
             # Trim trailing prose such as "DONE when the fix is not authorized".
             words = token.split()
-            node = next((w for w in words if w in known_nodes), None)
-            if node is None:
-                continue
+            node = words[0] if words else "?"
             if separator == "⇄":
                 cycles.add(node)
                 continue
@@ -354,7 +350,7 @@ def parse_routes(
 def check_router_graph(root: Path, modules: dict[str, str], report: Report) -> None:
     router_text = read(root / "ROUTER.md")
     known_nodes = set(modules) | NON_MODULE_NODES
-    routes, cycle_nodes = parse_routes(router_text, known_nodes)
+    routes, cycle_nodes = parse_routes(router_text)
 
     if not routes:
         report.fail("ROUTER.md", "no route graph parsed from the `## Routes` block")
@@ -710,6 +706,8 @@ def run(root: Path, verbose: bool) -> int:
     report = Report()
 
     modules = check_structure(root, report)
+    if report.errors:
+        return print_report(report, verbose)
     if modules:
         check_module_contract(modules, report)
         check_module_next(modules, report)
@@ -724,14 +722,18 @@ def run(root: Path, verbose: bool) -> int:
     check_references(root, report)
     check_prompt_alignment(root, report)
 
+    return print_report(report, verbose)
+
+
+def print_report(report: Report, verbose: bool) -> int:
     if verbose:
         for name in report.checks:
-            print(f"  ok  {name}")
+            print(f"  ok  {name}".encode("ascii", "backslashreplace").decode("ascii"))
 
     if report.errors:
         print(f"\nASEF consistency: {len(report.errors)} problem(s)\n")
         for error in report.errors:
-            print(f"  ✗ {error}")
+            print(f"  FAIL  {error}".encode("ascii", "backslashreplace").decode("ascii"))
         return 1
 
     print(f"\nASEF consistency: {len(report.checks)} checks passed.")
