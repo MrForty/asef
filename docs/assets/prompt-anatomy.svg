@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="560" viewBox="0 0 1400 560" role="img" aria-labelledby="title desc">
+  <title id="title">Quale parte del prompt universale ASEF modificare</title>
+  <desc id="desc">La parte superiore del prompt resta invariata. Si compila soltanto il blocco Richiesta in fondo.</desc>
+  <rect width="1400" height="560" rx="28" fill="#f5f1e9"/>
+  <text x="62" y="64" fill="#102752" font-family="Arial, sans-serif" font-size="30" font-weight="700">Prompt universale: modifica solo il blocco finale</text>
+  <g font-family="Arial, sans-serif">
+    <g transform="translate(62 110)">
+      <rect width="520" height="382" rx="18" fill="#ffffff" stroke="#cad4e7" stroke-width="2"/>
+      <rect width="520" height="64" rx="18" fill="#173e7a"/><path d="M0 46H520V64H0z" fill="#173e7a"/>
+      <text x="30" y="41" fill="#fff" font-size="19" font-weight="700">NON MODIFICARE</text>
+      <g fill="#51647f" font-size="17"><text x="34" y="112">Bootstrap</text><text x="34" y="157">Contratti e capacità</text><text x="34" y="202">Primo output</text><text x="34" y="247">Lingua ed etichette</text></g>
+      <g stroke="#d8dfeb" stroke-width="2"><path d="M34 126H486"/><path d="M34 171H486"/><path d="M34 216H486"/><path d="M34 261H486"/></g>
+      <text x="34" y="316" fill="#7f8da4" font-size="15">Queste regole attivano il framework,</text><text x="34" y="340" fill="#7f8da4" font-size="15">instradano il lavoro e proteggono i gate.</text>
+    </g>
+    <path d="M615 301H735" stroke="#ff7354" stroke-width="5"/><path d="M735 301l-20-13v26z" fill="#ff7354"/>
+    <g transform="translate(770 110)">
+      <rect width="568" height="382" rx="18" fill="#fff" stroke="#ff7354" stroke-width="4"/>
+      <rect width="568" height="64" rx="15" fill="#ff7354"/><path d="M0 46H568V64H0z" fill="#ff7354"/>
+      <text x="30" y="41" fill="#fff" font-size="19" font-weight="700">COMPILA OGNI VOLTA: ## Richiesta</text>
+      <g fill="#102752" font-size="17" font-weight="700"><text x="34" y="112">1. Richiesta</text><text x="34" y="158">2. Contesto di prima mano</text><text x="34" y="204">3. Vincoli non negoziabili</text><text x="34" y="250">4. Non-goal</text><text x="34" y="296">5. Autorizzazioni di rilascio</text><text x="34" y="342">6. Artefatti già esistenti</text></g>
+      <g fill="#66758c" font-size="14"><text x="300" y="112">risultato concreto</text><text x="300" y="158">persone, problema, prova</text><text x="300" y="204">limiti che non vanno cambiati</text><text x="300" y="250">cosa resta fuori</text><text x="300" y="296">nessuna · commit · PR · merge · deploy</text><text x="300" y="342">SPEC, README, design system…</text></g>
+    </g>
+  </g>
+  <text x="700" y="530" text-anchor="middle" fill="#53647d" font-family="Arial, sans-serif" font-size="17">Un campo vuoto o “?” è un gap: l’agente prova prima a dedurre e verificare.</text>
+</svg>
