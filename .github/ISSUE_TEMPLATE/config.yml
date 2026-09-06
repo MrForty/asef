@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/MrForty/asef/discussions
+    about: Ask for help, share an experiment, or discuss an early idea.
+  - name: Private security report
+    url: https://github.com/MrForty/asef/security/advisories/new
+    about: Report a potential vulnerability without publishing it.
