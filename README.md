@@ -6,6 +6,7 @@ professionali.
 
 [![Consistency](https://github.com/MrForty/asef/actions/workflows/consistency.yml/badge.svg)](https://github.com/MrForty/asef/actions/workflows/consistency.yml)
 ![Version](https://img.shields.io/badge/ASEF-1.7-ff7354)
+![License](https://img.shields.io/badge/license-MIT-3da639)
 ![Dependencies](https://img.shields.io/badge/runtime_dependencies-0-174a8b)
 ![Mode](https://img.shields.io/badge/default-AUTO%20%2B%20ECONOMY-102752)
 
@@ -436,6 +437,8 @@ servono a misurare questi aspetti con agenti e progetti reali.
 
 ## Contribuire
 
-Per modificare il framework, leggi [`CLAUDE.md`](CLAUDE.md), esegui entrambi i
-controlli e mantieni ogni regola in un solo file autorevole. La cronologia delle
-versioni è in [`CHANGELOG.md`](CHANGELOG.md).
+Per contribuire, leggi [`CONTRIBUTING.md`](CONTRIBUTING.md), crea una pull
+request focalizzata ed esegui entrambi i controlli. Mantieni ogni regola in un
+solo file autorevole. Consulta anche il [codice di condotta](CODE_OF_CONDUCT.md)
+e la [policy di sicurezza](SECURITY.md). La cronologia delle versioni è in
+[`CHANGELOG.md`](CHANGELOG.md).

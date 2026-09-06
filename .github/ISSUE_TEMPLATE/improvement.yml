@@ -1,0 +1,26 @@
+name: Improvement proposal
+description: Propose a focused improvement to ASEF.
+title: "proposal: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Which problem should ASEF solve better?
+      description: Include a concrete agent or project scenario.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Explain the smallest useful change and affected documents.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Explain why existing routes, modules, or templates are insufficient.
+    validations:
+      required: true
