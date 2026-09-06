@@ -28,7 +28,7 @@ Unchanged repository areas without a dependency path, unrelated tasks or histori
 
 Review three independent axes always:
 
-1. **Specification fidelity:** required behavior, scope and acceptance criteria.
+1. **Specification fidelity:** requested delta, acceptance criteria and preserved behavior; for existing projects use the boundary in `guides/existing-projects.md`.
 2. **Engineering quality:** correctness, simplicity, reuse, maintainability, error handling and tests.
 3. **Risk and safety:** security, privacy, data integrity, migrations, concurrency, side effects, trust boundaries, dependency provenance and licensing, failure and rollback.
 
@@ -36,7 +36,7 @@ Add one axis per trait declared in `PROJECT.md`, and only those:
 
 | Trait | Axis |
 |---|---|
-| `ui` | Matches the `SPEC.md` UI section; empty, loading and error states covered; visual hierarchy; accessibility basics; no generic template pattern where the spec chose a specific one |
+| `ui` | Matches `SPEC.md` UI and applicable Website delivery; passes the originality and usability checks in `guides/web-experience.md`; preserves existing design outside the requested delta |
 | `public-surface` | Surface shape, naming, defaults, error messages, breaking-change exposure, documented seam |
 | `typed` | Types express the contract, illegal states unrepresentable, validation at trust boundaries, escape hatches justified in place |
 

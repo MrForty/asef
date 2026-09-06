@@ -31,9 +31,9 @@ Full chat history, entire repository, unrelated specifications or premature solu
 3. Build the gap ledger under the kernel gap policy.
 4. Resolve `RESEARCHABLE` gaps through `research`; ask surviving `USER-DECISION` gaps in one round.
 5. Define proposed behavior, boundaries, failure behavior and compatibility in the `PROJECT.md` Domain Terms; patch the table when a new concept appears.
-6. With `ui` declared, fill the `SPEC.md` UI section: screens, states, responsive behavior and accessibility, specific enough that two implementers render the same thing.
+6. With `ui`, fill `SPEC.md` UI under `guides/web-experience.md`: content, visual direction, tokens, screens and responsive states. For public content pages fill Website delivery; otherwise mark it `N/A`. Preserve existing design unless redesign is in scope.
 7. Select stable observable test seams, preferring existing high-level seams.
-8. Write pass/fail acceptance criteria, risks and rollback where applicable.
+8. Write pass/fail acceptance criteria, risks and rollback; for existing projects separate the requested delta from behavior, contracts and content to preserve.
 9. Self-review: could a fresh agent implement this without material interpretation?
 
 ## Exit criteria

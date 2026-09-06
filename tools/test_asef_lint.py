@@ -87,6 +87,41 @@ def desync_prompt_version(work: Path) -> None:
 # (label, mutation, substring the linter output must contain)
 CASES: list[tuple[str, Callable[[Path], None], str]] = [
     (
+        "guides: missing guide",
+        drop_file("guides/web-experience.md"),
+        "missing `guides/web-experience.md`",
+    ),
+    (
+        "guides: load condition removed",
+        mutate("guides/existing-projects.md", "## When to load", "## Other"),
+        "missing load condition",
+    ),
+    (
+        "guides: consumer disconnected",
+        mutate("modules/qa.md", "`guides/web-experience.md`", "the visual checklist"),
+        "missing conditional guide",
+    ),
+    (
+        "guides: budget exceeded",
+        append_text("guides/existing-projects.md", "x" * 4801),
+        "guide budget",
+    ),
+    (
+        "guides: internal reference broken",
+        append_text("guides/web-experience.md", "\nSee `guides/missing.md`.\n"),
+        "references `guides/missing.md`",
+    ),
+    (
+        "templates: website delivery removed",
+        mutate("templates/SPEC.template.md", "## Website delivery", "## Other"),
+        "mandatory section `Website delivery`",
+    ),
+    (
+        "templates: existing baseline removed",
+        mutate("templates/SPEC.template.md", "## Current State", "## Other"),
+        "mandatory section `Current State`",
+    ),
+    (
         "graph: bare optional marker reports without traceback",
         mutate("ROUTER.md", "review → DONE", "review → ? → DONE"),
         "has no module file",

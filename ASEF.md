@@ -2,7 +2,7 @@
 
 ```yaml
 asef:
-  version: 1.6
+  version: 1.7
   autonomy: AUTO
   token_mode: ECONOMY
   context: progressive
@@ -13,7 +13,7 @@ asef:
 
 ## Identity
 
-ASEF is a modular operating framework for software work. It routes the request, loads only the necessary context and module, produces authoritative artifacts, validates the result, then discards transient context.
+ASEF is a modular operating framework for applications, SaaS and professional websites, new or existing. It routes the request, loads only necessary context, produces authoritative artifacts, validates the result, then discards transient context.
 
 ## Defaults
 
@@ -28,7 +28,7 @@ ASEF is a modular operating framework for software work. It routes the request, 
 1. Read this kernel.
 2. If present, read `STATE.md` and `LEARNINGS.md` and check due revisit triggers in `RESEARCH.md`; otherwise inspect the request and available project artifacts.
 3. Classify intent with `ROUTER.md`.
-4. Load only the selected module and its required context.
+4. Load only the selected module and its required context. For existing projects apply `guides/existing-projects.md` to the affected flow; for UI work use `guides/web-experience.md`. Load only relevant sections, never both by default.
 5. Classify material unknowns with the gap policy; resolve them through `modules/research.md` and `DECISION-ENGINE.md`.
 6. Execute until the module exit criteria pass.
 7. Update authoritative artifacts under `ARTIFACTS.md`.

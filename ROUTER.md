@@ -58,6 +58,7 @@ qa? → ship → DONE
 
 ## Routing rules
 
+- Website creation uses `GREENFIELD`; an existing site/app change uses `MODIFY`, `DIAGNOSE` or `IMPROVE` by intent. Missing ASEF artifacts do not trigger discovery. Load only applicable guides from `ASEF.md`; they are checks within phases, not graph nodes.
 - Existing executable task with acceptance criteria: start at `implementation`.
 - `RESEARCHABLE` gaps: invoke `research` from the active module; never open a separate route.
 - Unknown cause: start at `diagnose`, not implementation.

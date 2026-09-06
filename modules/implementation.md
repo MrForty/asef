@@ -26,10 +26,10 @@ Full chat, all tasks, all artifacts, complete repository or unrelated modules.
 
 ## Procedure
 
-1. Inspect the actual end-to-end flow, existing helpers, conventions and callers.
+1. Inspect the end-to-end flow, helpers and callers; establish the affected baseline under `guides/existing-projects.md` before changing existing work.
 2. Confirm the task's acceptance criteria, risk classes and test seam; a seam is a public boundary, never a private internal.
 3. For non-trivial behavior, establish the smallest failing automated check when practical.
-4. Implement the minimum root-cause change using existing code, platform features and dependencies first.
+4. Implement the minimum root-cause change using existing code, platform features and dependencies first. For UI, apply `guides/web-experience.md`; verify a representative view before replicating it. Connect real actions, not placeholder success handlers.
 5. Run focused tests and static checks; refactor only to remove present duplication or risk.
 6. Re-read the diff for unintended scope, debug artifacts and leaked secrets; preserve unrelated working changes.
 7. Commit the task under the version-control rules in `ASEF.md`.
