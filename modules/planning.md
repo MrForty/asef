@@ -28,9 +28,9 @@ Unrelated modules, speculative future requirements or complete repository contex
 
 1. Reuse current patterns and components before proposing new ones.
 2. With no existing baseline, resolve stack, dependency and hosting gaps through `research` at the depth their reversibility class requires; record the outcome as a decision with the alternatives rejected.
-3. Apply scope and complexity gates; remove architecture not required by the spec.
+3. Apply scope and complexity gates. Keep the existing stack unless it blocks the outcome; for new sites prefer static output, adding server rendering, CMS or services only for required behavior or editing needs.
 4. Trace end-to-end data and control flow, ownership and trust boundaries.
-5. Define persistence, interfaces, failure handling and compatibility only where relevant; for every risk class the change touches, state boundary, failure and idempotency handling.
+5. Define interfaces, persistence and compatibility only where needed; enforce validation and permissions at server boundaries, keep secrets server-side, isolate tenant data. For every risk class touched, state boundary, failure and idempotency handling.
 6. Define test strategy, rollout, rollback and operational checks proportionate to risk; with `deployed`, name environments, rollout order and rollback; with `persistence`, migration order, backfill and reversibility.
 7. List every `HUMAN-ACTION` prerequisite with location, value to capture and destination.
 8. Validate security, data integrity, performance and deployment implications where applicable.

@@ -32,6 +32,17 @@ KERNEL_FILES = [
 
 ACTIVATION_PROMPT = "prompt universale ASEF.txt"
 
+# Conditional checklists, not workflow nodes. Each entry names its load sites.
+GUIDE_CONSUMERS = {
+    "guides/web-experience.md": [
+        "ASEF.md", "modules/specification.md", "modules/implementation.md",
+        "modules/review.md", "modules/qa.md", "templates/SPEC.template.md",
+    ],
+    "guides/existing-projects.md": [
+        "ASEF.md", "modules/implementation.md", "modules/review.md", "modules/qa.md",
+    ],
+}
+
 # ASEF.md "Module contract", in the order it requires.
 MODULE_SECTIONS = [
     "Trigger",
@@ -93,8 +104,10 @@ TEMPLATE_SECTIONS = {
         "Assumptions",
     ],
     "SPEC.template.md": [
+        "Current State",
         "Scope",
         "UI",
+        "Website delivery",
         "Non-Functional Requirements",
         "Test Seams",
         "Acceptance Criteria",
@@ -124,7 +137,7 @@ TEMPLATE_SECTIONS = {
 
 # Approximate token ceilings (characters / 4). Compression is the point: a
 # change that trips one is a signal to cut, not to raise the ceiling.
-BUDGETS = {"kernel": 6000, "module": 1200, "prompt": 2400}
+BUDGETS = {"kernel": 6000, "module": 1200, "prompt": 2400, "guide": 1200}
 
 # Template rows CLAUDE.md declares mandatory: filled or marked N/A, never deleted.
 SPEC_NFR_ROWS = [
@@ -231,7 +244,7 @@ def estimated_tokens(text: str) -> int:
 
 def check_structure(root: Path, report: Report) -> dict[str, str]:
     """Expected files exist. Returns {module name: text} for later checks."""
-    for name in KERNEL_FILES + [ACTIVATION_PROMPT, "CHANGELOG.md", "README.md"]:
+    for name in KERNEL_FILES + [ACTIVATION_PROMPT, "CHANGELOG.md", "README.md", *GUIDE_CONSUMERS]:
         if not (root / name).is_file():
             report.fail("structure", f"missing `{name}`")
 
@@ -597,6 +610,7 @@ def check_references(root: Path, report: Report) -> None:
     docs += [root / "CLAUDE.md", root / "README.md", root / ACTIVATION_PROMPT]
     docs += sorted((root / "modules").glob("*.md"))
     docs += sorted((root / "templates").glob("*.md"))
+    docs += sorted((root / "guides").glob("*.md"))
 
     link_re = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
     path_re = re.compile(r"`([A-Za-z0-9_./ -]+\.(?:md|txt|py|yml))`")
@@ -667,6 +681,11 @@ def check_budget(root: Path, modules: dict[str, str], report: Report) -> None:
                 f"modules/{name}.md", f"~{tokens} tokens exceeds the {BUDGETS['module']} budget"
             )
 
+    for path in sorted((root / "guides").glob("*.md")):
+        tokens = estimated_tokens(read(path))
+        if tokens > BUDGETS["guide"]:
+            report.fail(path.relative_to(root).as_posix(), f"~{tokens} tokens exceeds the guide budget")
+
     prompt_tokens = estimated_tokens(read(root / ACTIVATION_PROMPT))
     if prompt_tokens > BUDGETS["prompt"]:
         report.fail(
@@ -697,6 +716,18 @@ def check_single_home(root: Path, modules: dict[str, str], report: Report) -> No
     report.ok("one fact, one home (uncertainty ladder)")
 
 
+def check_guides(root: Path, report: Report) -> None:
+    """A conditional checklist must remain reachable without becoming a module."""
+    for guide, consumers in GUIDE_CONSUMERS.items():
+        if not section(read(root / guide), "When to load").strip():
+            report.fail(guide, "missing load condition")
+        for consumer in consumers:
+            path = root / consumer
+            if not path.is_file() or f"`{guide}`" not in read(path):
+                report.fail(consumer, f"missing conditional guide `{guide}`")
+    report.ok("conditional guides have load conditions and consumers")
+
+
 # --------------------------------------------------------------------------
 # Entry point
 # --------------------------------------------------------------------------
@@ -708,6 +739,7 @@ def run(root: Path, verbose: bool) -> int:
     modules = check_structure(root, report)
     if report.errors:
         return print_report(report, verbose)
+    check_guides(root, report)
     if modules:
         check_module_contract(modules, report)
         check_module_next(modules, report)

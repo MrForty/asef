@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7
+
+Professional websites and existing projects, with the same workflow.
+
+- Two conditional guides: content-led UI design and originality, public-page delivery, and preservation/regression checks for existing apps and websites. No new route, trait or module.
+- Specification captures visual direction and website delivery; implementation validates a representative view before replication; review and QA consume the guides.
+- Existing projects start from an affected baseline, retain their stack/contracts/design outside scope, and do not enter discovery merely because ASEF artifacts are absent.
+- Planning prefers the smallest adequate delivery architecture and reinforces server trust boundaries. Discovery avoids startup interviews for already-defined commissioned work.
+- Activation prompt now points to canonical rules instead of repeating the gap, implementation, review and capability procedures.
+- Linter checks guide presence, load conditions, consumers, references and budgets; mutation tests protect the new contracts. Evaluation scenarios document expected agent behavior without claiming empirical results.
+
 ## 1.6
 
 Safe decisions and portable verification.

@@ -35,8 +35,8 @@ Select automatically from impact and failure cost. A declared `persistence` or `
 ## Procedure
 
 1. Map acceptance criteria to concrete checks.
-2. Verify the happy path and applicable boundary/failure paths.
-3. With `ui` declared and a browser available, drive the acceptance path on the rendered surface: empty, loading and error states, console errors, a screenshot before and after. Without a browser, rendered-surface criteria stay `OPEN`, never `FACT`.
+2. Verify the happy path and boundary/failure paths; for existing work apply the regression gate in `guides/existing-projects.md`, separating pre-existing failures from new regressions.
+3. With `ui` and a browser, verify the rendered acceptance path under `guides/web-experience.md`: responsive views, content, accessibility, real actions and applicable website delivery checks. Compare before/after for existing UI. Without a browser, visual criteria stay `OPEN`, never `FACT`.
 4. Use isolated or backed-up data for destructive scenarios.
 5. Confirm real integration behavior, not only mocked internals, when feasible.
 6. On failure: capture minimal evidence, route to `diagnose`, fix, review and repeat affected QA. A defect surviving two QA cycles is evidence of a wrong seam: escalate to `planning`, `specification` or the user instead of repeating.

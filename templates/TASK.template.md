@@ -38,7 +38,9 @@
 
 ## Evidence
 
-<!-- Commands, results, the tree they ran against, and the commit. -->
+<!-- Commands, results, tree and commit. For existing projects include baseline,
+     pre-existing failures and preserved behavior; compare affected consumers.
+     For UI include representative rendered evidence, or OPEN if unavailable. -->
 
 ## Completion
 

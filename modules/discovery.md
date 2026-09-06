@@ -36,6 +36,8 @@ Implementation details, full repository, unrelated research or downstream plans.
 
 A first answer about demand is usually the rehearsed one. Before recording it as `FACT`, push for the specific person, the specific occasion, and what the user did rather than said. Interest, praise and stated intent are not demand.
 
+Apply demand probing only when it materially affects scope. A commissioned website or internal tool with a clear audience, brief and success criterion needs no startup traction interview. Record supplied evidence; ask only the missing blocking question.
+
 ## Exit criteria
 
 - problem and target user are specific enough to guide scope;
