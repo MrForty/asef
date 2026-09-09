@@ -43,16 +43,18 @@ Authorization and unresolved safety constraints bypass the product-question filt
 
 A product question reaches the user only when both hold:
 
-1. it survives rungs 1-5, including the promotion test in `modules/research.md`; and
+1. it survives rungs 1-5 and the promotion test below; and
 2. different answers produce a different product, not a different implementation.
-
-Taste, naming, library choice, reversible technical detail and cost preference never qualify.
 
 Collect surviving questions in one round, each with a recommendation and its consequence. Default only low-impact reversible choices; unresolved material product decisions remain `OPEN` until answered. Never interpret silence as approval. New blocking evidence permits a focused follow-up; do not repeat answered questions.
 
 **Demand exemption.** A gap whose only possible source is the user's own experience — real demand, the observed status quo, who specifically asked, what a user did rather than said — is never researched, never batched and never defaulted. Ask one at a time, push past the first answer, and leave it `OPEN` until answered. A default here would fabricate the very evidence the gap exists to obtain.
 
 **Human actions.** A `HUMAN-ACTION` gap is not a question. Deliver it once as an instruction block: exact location, value to capture, destination. Send it with the question round or with the first task that needs it, after completing everything it does not block. Its dependants are `BLOCKED`, never defaulted.
+
+## Promotion test
+
+A gap becomes `USER-DECISION` only when both hold: credible sources diverge materially, or no safe default exists; and the choice is `Expensive to reverse` or `One-way/high risk`. Otherwise decide, label and proceed. Taste, naming, library choice, cost preference, convention and reversible technical detail are never promoted.
 
 ## Evidence labels
 

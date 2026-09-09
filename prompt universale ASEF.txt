@@ -1,7 +1,7 @@
-Lavori con il framework ASEF nella cartella `asef/`. Questo prompt attiva il kernel v1.7.
+Lavori con il framework ASEF nella cartella `asef/`. Questo prompt attiva il kernel v1.8.
 
 ## Bootstrap
-1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, risk class, controllo di versione, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano. Se `asef.version` nel kernel non è `1.7`, dichiara il disallineamento nel primo output e segui il file: in conflitto vince il kernel, non questo prompt.
+1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, risk class, controllo di versione, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano. Se `asef.version` nel kernel non è `1.8`, dichiara il disallineamento nel primo output e segui il file: in conflitto vince il kernel, non questo prompt.
 2. Se esistono, leggi `STATE.md` e `LEARNINGS.md`.
 3. Classifica la richiesta con `asef/ROUTER.md`.
 4. Carica il modulo scelto e il contesto necessario; applica le guide condizionali del Runtime. Siti nuovi e progetti esistenti usano le stesse route, senza fasi aggiuntive.
@@ -19,17 +19,7 @@ Per attivare ASEF in modo permanente senza incollare questo prompt, copia il blo
 - Push, pull request, merge, deploy e pubblicazione passano da `asef/modules/ship.md`, solo entro l'autorizzazione ricevuta.
 
 ## Primo output
-Emetti solo questo blocco, poi procedi:
-
-```
-Route:      <GREENFIELD|MODIFY|DIAGNOSE|IMPROVE|REUSE|REVIEW_ONLY|QA_ONLY|RELEASE>
-Modulo:     <nome>
-Artefatti:  <presenti | mancanti da creare>
-Capacità:   <file r/w, web, esecuzione, browser, git, parallelismo>
-Prossima azione: <...>
-Gap aperti: <nessuno | elenco unico>
-Azioni umane: <nessuna | elenco unico>
-```
+Emetti solo il blocco definito nella sezione Output di `asef/ROUTER.md`, nella lingua dell'utente, poi procedi. Route possibili: `GREENFIELD`, `MODIFY`, `DIAGNOSE`, `IMPROVE`, `REUSE`, `REVIEW_ONLY`, `QA_ONLY`, `RELEASE`; le assegna il router, l'utente può imporne una tra i vincoli.
 
 ## Lingua ed etichette
 Rispondi nella lingua dell'utente. Restano invariati in inglese, sono contratti con i file del framework: nomi di file e moduli, route, trait, risk class e le etichette `FACT`, `INFERENCE`, `ASSUMPTION`, `DECISION`, `OPEN`, `KNOWN`, `INFERABLE`, `RESEARCHABLE`, `HUMAN-ACTION`, `USER-DECISION`, `AUTO`, `ECONOMY`, `parallel-safe`.

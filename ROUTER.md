@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Select the smallest workflow that can complete the request. Routes are graphs: skip unnecessary nodes and return only to a failed gate.
+Select the smallest workflow that can complete the request. Routes are graphs: skip unnecessary nodes.
 
 ## Classification
 
@@ -60,6 +60,7 @@ qa? → ship → DONE
 
 - Website creation uses `GREENFIELD`; an existing site/app change uses `MODIFY`, `DIAGNOSE` or `IMPROVE` by intent. Missing ASEF artifacts do not trigger discovery. Load only applicable guides from `ASEF.md`; they are checks within phases, not graph nodes.
 - Existing executable task with acceptance criteria: start at `implementation`.
+- Question or explanation about the current system: answer read-only from artifacts and code under `DECISION-ENGINE.md`; no route, no artifact change beyond a qualifying `LEARNINGS.md` row.
 - `RESEARCHABLE` gaps: invoke `research` from the active module; never open a separate route.
 - Unknown cause: start at `diagnose`, not implementation.
 - Product uncertainty: route to `discovery` or `product-scope` only for the unresolved portion.
@@ -74,4 +75,14 @@ qa? → ship → DONE
 
 ## Output
 
-Record in `STATE.md`: intent, active module, reason, required inputs and next gate.
+Before any work, under either activation method, emit this block once in the user's language, then record intent, active module, reason, required inputs and next gate in `STATE.md`:
+
+```text
+Route:         <route>
+Module:        <module>
+Artifacts:     <present | missing, to create>
+Capabilities:  <file r/w, web, execution, browser, git, parallel contexts>
+Next action:   <...>
+Open gaps:     <none | single list>
+Human actions: <none | single list>
+```

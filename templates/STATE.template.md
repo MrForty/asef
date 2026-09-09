@@ -4,10 +4,12 @@
 **Intent:** `GREENFIELD | MODIFY | DIAGNOSE | IMPROVE | REUSE | REVIEW_ONLY | QA_ONLY | RELEASE`  
 **Active module:**  
 **Current task:**  
-**Last verified:** `<commit or tree> at <date>`
+**Last verified:** `<commit or tree> at <date>`  
+**Next revisit:** `None | GAP-NNN when <date, version or event>`
 
 <!-- Single writer: the orchestrating context. Keep under 40 lines: anything
-     longer belongs in an artifact, not here. -->
+     longer belongs in an artifact, not here. Next revisit mirrors the earliest
+     due trigger in RESEARCH.md; the runtime opens the ledger only when it fires. -->
 
 ## Verified State
 

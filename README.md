@@ -5,7 +5,7 @@ guidare agenti di coding nella creazione e modifica di web app, SaaS e siti web
 professionali.
 
 [![Consistency](https://github.com/MrForty/asef/actions/workflows/consistency.yml/badge.svg)](https://github.com/MrForty/asef/actions/workflows/consistency.yml)
-![Version](https://img.shields.io/badge/ASEF-1.7-ff7354)
+![Version](https://img.shields.io/badge/ASEF-1.8-ff7354)
 ![License](https://img.shields.io/badge/license-MIT-3da639)
 ![Dependencies](https://img.shields.io/badge/runtime_dependencies-0-174a8b)
 ![Mode](https://img.shields.io/badge/default-AUTO%20%2B%20ECONOMY-102752)
@@ -91,8 +91,9 @@ quando esiste.
 
 ### 3. Lascia che ASEF scelga il percorso
 
-Con il prompt universale, il primo output dichiara route, modulo attivo,
-artefatti, capacità disponibili, prossima azione, gap e azioni umane. Non devi
+Con entrambe le attivazioni, il primo output (definito in
+[`ROUTER.md`](ROUTER.md)) dichiara route, modulo attivo, artefatti, capacità
+disponibili, prossima azione, gap e azioni umane. Non devi
 scegliere manualmente moduli, stack o route se non vuoi imporli come vincolo.
 
 ## Il prompt universale: cosa modificare
@@ -395,7 +396,7 @@ necessarie degli artefatti e, quando applicabile, una guida condizionale.
 
 - Kernel completo: meno di 6.000 token stimati.
 - Singolo modulo o guida: massimo 1.200 token stimati.
-- Prompt universale 1.7: circa 1.200 token stimati.
+- Prompt universale: circa 1.200 token stimati.
 - `STATE.md`: puntatore compatto, non copia di specifica e piano.
 - Output di ricerca e contesti paralleli: rientrano soltanto come evidenze
   compresse.
@@ -407,7 +408,7 @@ il tokenizer esatto di ogni modello.
 
 ASEF è composto soprattutto da contratti Markdown. Il linter verifica che i
 file continuino a concordare su struttura, route, moduli, trait, risk class,
-template, guide, riferimenti, versione e budget:
+template, guide, riferimenti, vocabolario, versione, README e budget:
 
 ```bash
 python3 tools/asef_lint.py -v

@@ -24,6 +24,14 @@ Relevant plan, `LEARNINGS.md`, specialist review tooling, runtime evidence and a
 
 Unchanged repository areas without a dependency path, unrelated tasks or historical deliberation.
 
+## Depth
+
+- **Quick:** one pass over the diff across the three axes, no parallel contexts; localized, reversible change with risk classes `none`.
+- **Standard:** default.
+- **Deep:** independent contexts per axis when available; central flows and any declared risk class.
+
+Select from impact and failure cost as in `modules/qa.md`. Depth changes effort, never coverage: trait axes and threat passes always run.
+
 ## Procedure
 
 Review three independent axes always:
