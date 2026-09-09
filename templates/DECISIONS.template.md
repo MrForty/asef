@@ -6,7 +6,7 @@
 
 | ID | Date | Decision | Alternatives rejected | Rationale | Reversibility | Revisit when | Ref |
 |---|---|---|---|---|---|---|---|
-| D-001 |  |  |  |  | `Trivial \| Reversible \| Expensive \| One-way` |  |  |
+| D-001 |  |  |  |  | `Trivial \| Reversible \| Expensive to reverse \| One-way/high risk` |  |  |
 
 ## Superseded
 

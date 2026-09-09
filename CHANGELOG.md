@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8
+
+One behavior for both activations, less duplication, bounded memory.
+
+- First-output block moves from the activation prompt into `ROUTER.md` Output: the `AGENTS.md` activation now declares route, capabilities, gaps and human actions too. The prompt points to it and lists the routes a user may impose.
+- Promotion test moves from `modules/research.md` to `DECISION-ENGINE.md`: modules with only `USER-DECISION` gaps no longer load the research module for a decision rule. Its taste/cost exclusions merge with the question round's.
+- Kernel deduplicated: the ask-list, the patch-not-fork rule, the do-not-load list and the backtracking rule each keep one home. Identity compressed.
+- `review` gains a Depth table (Quick, Standard, Deep) mirroring `qa`; depth changes effort, never coverage.
+- `STATE.md` carries `Next revisit`; the runtime opens `RESEARCH.md` only when it fires. `RESEARCH.md` and `LEARNINGS.md` gain caps (40 and 30 active rows) and an Archive section the context manager never loads.
+- Routing rule for questions about the current system: read-only answer, no route, no artifact change.
+- Reversibility classes use one vocabulary everywhere: `Trivial`, `Reversible`, `Expensive to reverse`, `One-way/high risk`. Guides load each on its own condition.
+- Linter: reversibility vocabulary, router output block, promotion-test single home, README version badge and request block aligned with the prompt. Six new mutation tests.
+
 ## 1.7
 
 Professional websites and existing projects, with the same workflow.

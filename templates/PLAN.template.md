@@ -2,8 +2,9 @@
 
 ## Approach
 
-<!-- Minimum technical approach and existing patterns reused. For each Expensive
-     or One-way choice, the alternatives rejected, including no change. -->
+<!-- Minimum technical approach and existing patterns reused. For each
+     `Expensive to reverse` or `One-way/high risk` choice, the alternatives
+     rejected, including no change. -->
 
 ## Affected Components
 

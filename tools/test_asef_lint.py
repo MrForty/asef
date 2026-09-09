@@ -84,6 +84,16 @@ def desync_prompt_version(work: Path) -> None:
     target.write_text(text.replace(f"kernel v{version}", "kernel v0.9"), "utf-8")
 
 
+def desync_readme_badge(work: Path) -> None:
+    """Leave the README badge on an older version."""
+    version = current_version(work)
+    target = work / "README.md"
+    text = target.read_text(encoding="utf-8")
+    if f"ASEF-{version}-" not in text:
+        raise AssertionError("README badge does not carry the current version")
+    target.write_text(text.replace(f"ASEF-{version}-", "ASEF-0.9-", 1), "utf-8")
+
+
 # (label, mutation, substring the linter output must contain)
 CASES: list[tuple[str, Callable[[Path], None], str]] = [
     (
@@ -258,6 +268,36 @@ CASES: list[tuple[str, Callable[[Path], None], str]] = [
             "## Purpose\n\nknown → inferable → ask.\n",
         ),
         "ladder",
+    ),
+    (
+        "one fact, one home: promotion test restated in a module",
+        append_text("modules/research.md", "\nPromote only when credible sources diverge materially.\n"),
+        "promotion test",
+    ),
+    (
+        "vocabulary: reversibility class shortened in a template",
+        mutate("templates/DECISIONS.template.md", "Expensive to reverse", "Expensive"),
+        "reversibility class shortened",
+    ),
+    (
+        "vocabulary: reversibility class dropped from its table",
+        mutate("DECISION-ENGINE.md", "| One-way/high risk |", "| Irreversible |"),
+        "missing from its table",
+    ),
+    (
+        "router: first-output block loses a field",
+        mutate("ROUTER.md", "Human actions: <none | single list>", ""),
+        "lacks the `Human actions` field",
+    ),
+    (
+        "readme: version badge behind the kernel",
+        desync_readme_badge,
+        "version badge",
+    ),
+    (
+        "readme: request block drifted from the prompt",
+        mutate("README.md", "Richiesta: <una frase: cosa deve fare>", "Richiesta: <cosa deve fare>"),
+        "request block differs",
     ),
 ]
 

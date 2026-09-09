@@ -28,7 +28,7 @@ Load in this order and stop as soon as the task is answerable:
 - complete conversation history;
 - all ASEF modules;
 - whole artifacts when a section is sufficient;
-- `RESEARCH.md` rows unrelated to the current gaps;
+- `RESEARCH.md` rows unrelated to the current gaps, and the Archive sections of `RESEARCH.md` and `LEARNINGS.md`;
 - complete repository trees or unrelated files;
 - closed tasks, rejected alternatives or raw research logs;
 - subagent transcripts or raw search output; keep only the returned answer packet.

@@ -2,7 +2,7 @@
 
 ```yaml
 asef:
-  version: 1.7
+  version: 1.8
   autonomy: AUTO
   token_mode: ECONOMY
   context: progressive
@@ -13,7 +13,7 @@ asef:
 
 ## Identity
 
-ASEF is a modular operating framework for applications, SaaS and professional websites, new or existing. It routes the request, loads only necessary context, produces authoritative artifacts, validates the result, then discards transient context.
+Modular operating framework for applications, SaaS and professional websites, new or existing: route the request, load only necessary context, produce authoritative artifacts, validate the result, discard transient context.
 
 ## Defaults
 
@@ -26,9 +26,9 @@ ASEF is a modular operating framework for applications, SaaS and professional we
 ## Runtime
 
 1. Read this kernel.
-2. If present, read `STATE.md` and `LEARNINGS.md` and check due revisit triggers in `RESEARCH.md`; otherwise inspect the request and available project artifacts.
+2. If present, read `STATE.md` and `LEARNINGS.md`; open `RESEARCH.md` only for a revisit trigger `STATE.md` marks due. Otherwise inspect the request and available project artifacts.
 3. Classify intent with `ROUTER.md`.
-4. Load only the selected module and its required context. For existing projects apply `guides/existing-projects.md` to the affected flow; for UI work use `guides/web-experience.md`. Load only relevant sections, never both by default.
+4. Load only the selected module and its required context. Apply `guides/existing-projects.md` to the affected flow of an existing project and `guides/web-experience.md` to UI work: each only when its condition holds, and only the relevant sections.
 5. Classify material unknowns with the gap policy; resolve them through `modules/research.md` and `DECISION-ENGINE.md`.
 6. Execute until the module exit criteria pass.
 7. Update authoritative artifacts under `ARTIFACTS.md`.
@@ -57,7 +57,7 @@ Use this compressed ladder; open `DECISION-ENGINE.md` for material uncertainty:
 
 `known → inferable → answerable from artifacts/code → researchable → safe default → ask`
 
-Proceed automatically for low-impact reversible decisions. Ask before unresolved product choices, destructive or irreversible actions, material external effects, security/compliance trade-offs, or choices with substantially different outcomes.
+Proceed automatically for low-impact reversible decisions; ask only under its AUTO policy.
 
 ## Gap policy
 
@@ -69,7 +69,7 @@ Before asking or proceeding on incomplete information, classify every material u
 | `INFERABLE` | Derivable from goals, constraints or conventions | Derive it |
 | `RESEARCHABLE` | Answerable by evidence outside the project | `modules/research.md` |
 | `HUMAN-ACTION` | Only the user can perform it: account, credential, DNS, payment, third-party console | One action block in `PLAN.md`, attached to the task that needs it; work continues on everything it does not block |
-| `USER-DECISION` | Passes the promotion test in `modules/research.md` | Batched question round, except gaps under the demand exemption |
+| `USER-DECISION` | Passes the promotion test in `DECISION-ENGINE.md` | Batched question round, except gaps under the demand exemption |
 
 Ledger row: `GAP-NNN | question | why it blocks | consuming artifact | reversibility class`.
 
@@ -110,8 +110,6 @@ Open `CONTEXT-MANAGER.md` when selecting inputs or handing work to a fresh conte
 
 `STATE → current TASK → relevant artifact sections → relevant code/tests → targeted adjacent context`
 
-Do not load full chat history, every module, the whole repository or unrelated tasks by default.
-
 ## Module contract
 
 Every module declares:
@@ -125,7 +123,6 @@ Every module declares:
 
 ## Artifact policy
 
-- Patch the canonical artifact; do not create competing summaries.
 - Separate confirmed facts, assumptions, decisions and open questions.
 - Record only decisions that affect future work.
 - `STATE.md` is a compact pointer, not a second specification or plan.

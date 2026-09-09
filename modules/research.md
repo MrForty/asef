@@ -43,8 +43,8 @@ evidence for first-party evidence.
 2. Cluster related gaps so one subagent covers one coherent question set.
 3. Dispatch one fan-out at the required depth; apply capability fallbacks in `CONTEXT-MANAGER.md` when delegation is unavailable or disallowed.
 4. Each subagent returns only the answer packet below; discard its context on return.
-5. Adjudicate conflicts, apply the promotion test, label every answer.
-6. Patch the consuming artifact with the source inline; append the row to `RESEARCH.md`.
+5. Adjudicate conflicts, apply the promotion test in `DECISION-ENGINE.md`, label every answer.
+6. Patch the consuming artifact with the source inline; append the row to `RESEARCH.md` and mirror the earliest due revisit trigger in `STATE.md`.
 7. Return the resolved ledger to the calling module.
 
 ## Depth
@@ -82,17 +82,6 @@ With no source, use a safe reversible option as `ASSUMPTION` with a revisit trig
 - Record version or date for anything that decays: pricing, limits, APIs,
   library recommendations, security advisories.
 
-## Promotion test
-
-Promote a gap to `USER-DECISION` only when both hold:
-
-1. credible sources diverge materially, or no safe default exists; and
-2. the choice is `Expensive to reverse` or `One-way/high risk` under
-   `DECISION-ENGINE.md`.
-
-Otherwise decide, label and proceed. Taste, cost preference, convention and
-reversible technical choices are never promoted.
-
 ## Budget
 
 Declare per invocation: maximum subagents, depth per gap, stop point. ECONOMY
@@ -105,7 +94,7 @@ does not need.
 
 - every gap has a labelled answer and revisit trigger, or an explicit `OPEN` blocker;
 - every `FACT` carries a source;
-- promoted `USER-DECISION` gaps pass the promotion test;
+- promoted `USER-DECISION` gaps pass the promotion test in `DECISION-ENGINE.md`;
 - answers are patched into their consuming artifacts and `RESEARCH.md`;
 - no raw research material entered the calling context.
 

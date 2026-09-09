@@ -158,6 +158,22 @@ PROJECT_ENV_ROWS = ["Local", "Preview / staging", "Production"]
 EVIDENCE_LABELS = ["FACT", "INFERENCE", "ASSUMPTION", "DECISION", "OPEN"]
 GAP_LABELS = ["KNOWN", "INFERABLE", "RESEARCHABLE", "HUMAN-ACTION", "USER-DECISION"]
 
+# Reversibility classes (DECISION-ENGINE.md), never shortened elsewhere.
+REVERSIBILITY_CLASSES = ["Trivial", "Reversible", "Expensive to reverse", "One-way/high risk"]
+REVERSIBILITY_SHORTHANDS = [
+    (re.compile(r"\bExpensive\b(?!\s+to\s+reverse)"), "Expensive to reverse"),
+    (re.compile(r"\bOne-way\b(?!/high risk)"), "One-way/high risk"),
+]
+
+# Fields of the first-output block ROUTER.md owns for both activation methods.
+ROUTER_OUTPUT_FIELDS = ["Route", "Module", "Artifacts", "Capabilities", "Next action", "Open gaps", "Human actions"]
+
+# Rules with one home: a phrase that identifies the rule, and the files allowed to state it.
+SINGLE_HOME_RULES = {
+    "uncertainty ladder": ("known → inferable", {"ASEF.md", "DECISION-ENGINE.md"}),
+    "promotion test": ("credible sources diverge", {"DECISION-ENGINE.md"}),
+}
+
 # Referenced names that belong to a target project or to the outside world and
 # therefore must not be resolved against this repository.
 REFERENCE_ALLOWLIST = {
@@ -700,20 +716,82 @@ def check_budget(root: Path, modules: dict[str, str], report: Report) -> None:
 
 def check_single_home(root: Path, modules: dict[str, str], report: Report) -> None:
     """CLAUDE.md: each rule lives in one kernel file; modules reference it."""
-    ladder = "known → inferable"
-    owners = {"ASEF.md", "DECISION-ENGINE.md"}
-    for name, text in sorted(modules.items()):
-        if ladder in text:
-            report.fail(
-                f"modules/{name}.md",
-                "restates the uncertainty ladder owned by DECISION-ENGINE.md",
-            )
-    for name in KERNEL_FILES:
-        if name in owners:
-            continue
-        if ladder in read(root / name):
-            report.fail(name, "restates the uncertainty ladder owned by DECISION-ENGINE.md")
-    report.ok("one fact, one home (uncertainty ladder)")
+    for rule, (phrase, owners) in SINGLE_HOME_RULES.items():
+        for name, text in sorted(modules.items()):
+            if phrase in text:
+                report.fail(f"modules/{name}.md", f"restates the {rule} owned by {', '.join(sorted(owners))}")
+        for name in KERNEL_FILES:
+            if name not in owners and phrase in read(root / name):
+                report.fail(name, f"restates the {rule} owned by {', '.join(sorted(owners))}")
+    report.ok("one fact, one home (" + ", ".join(SINGLE_HOME_RULES) + ")")
+
+
+def framework_docs(root: Path) -> list[Path]:
+    """Every English framework document an agent may load."""
+    docs = [root / n for n in KERNEL_FILES]
+    for folder in ("modules", "templates", "guides"):
+        docs += sorted((root / folder).glob("*.md"))
+    return [d for d in docs if d.is_file()]
+
+
+def check_reversibility_vocabulary(root: Path, report: Report) -> None:
+    """DECISION-ENGINE.md declares the classes; no other file shortens them."""
+    engine = read(root / "DECISION-ENGINE.md")
+    declared = table_first_column(section(engine, "Reversibility classes"))
+    for cls in REVERSIBILITY_CLASSES:
+        if cls not in declared:
+            report.fail("DECISION-ENGINE.md", f"reversibility class `{cls}` missing from its table")
+
+    for doc in framework_docs(root):
+        text = read(doc)
+        for pattern, full in REVERSIBILITY_SHORTHANDS:
+            for match in pattern.finditer(text):
+                line = text.count("\n", 0, match.start()) + 1
+                report.fail(
+                    doc.relative_to(root).as_posix(),
+                    f"line {line}: reversibility class shortened; write `{full}`",
+                )
+    report.ok(f"reversibility vocabulary ({len(REVERSIBILITY_CLASSES)} classes, never shortened)")
+
+
+def check_router_output(root: Path, report: Report) -> None:
+    """ROUTER.md owns the first-output block both activation methods emit."""
+    body = section(read(root / "ROUTER.md"), "Output")
+    block = re.search(r"```text\n(.*?)```", body, re.S)
+    if not block:
+        report.fail("ROUTER.md", "`Output` has no first-output block")
+        return
+    for field_name in ROUTER_OUTPUT_FIELDS:
+        if not re.search(rf"^{re.escape(field_name)}:", block.group(1), re.M):
+            report.fail("ROUTER.md", f"first-output block lacks the `{field_name}` field")
+    report.ok(f"router output block ({len(ROUTER_OUTPUT_FIELDS)} fields)")
+
+
+def request_block(text: str, fence: str) -> str | None:
+    match = re.search(rf"```{fence}\n(Richiesta:.*?)```", text, re.S)
+    return match.group(1).strip() if match else None
+
+
+def check_readme(root: Path, report: Report) -> None:
+    """README.md is documentation, not runtime: it must not drift from what it documents."""
+    readme = read(root / "README.md")
+    asef = read(root / "ASEF.md")
+    version = re.search(r"^\s*version:\s*([0-9]+(?:\.[0-9]+)*)\s*$", asef, re.M)
+    badges = re.findall(r"badge/ASEF-([0-9]+(?:\.[0-9]+)*)-", readme)
+    if not badges:
+        report.fail("README.md", "no ASEF version badge")
+    elif version and badges[0] != version.group(1):
+        report.fail("README.md", f"version badge says `{badges[0]}` but ASEF.md declares `{version.group(1)}`")
+
+    prompt_block = request_block(read(root / ACTIVATION_PROMPT), "")
+    readme_block = request_block(readme, "text")
+    if prompt_block is None:
+        report.fail(ACTIVATION_PROMPT, "no request block starting with `Richiesta:`")
+    elif readme_block is None:
+        report.fail("README.md", "does not show the request block of the activation prompt")
+    elif prompt_block != readme_block:
+        report.fail("README.md", "request block differs from the activation prompt")
+    report.ok("README aligned (version badge, request block)")
 
 
 def check_guides(root: Path, report: Report) -> None:
@@ -748,11 +826,14 @@ def run(root: Path, verbose: bool) -> int:
         check_risk_classes(root, modules, report)
         check_single_home(root, modules, report)
         check_budget(root, modules, report)
+    check_reversibility_vocabulary(root, report)
+    check_router_output(root, report)
     check_templates(root, report)
     check_artifacts(root, report)
     check_version(root, report)
     check_references(root, report)
     check_prompt_alignment(root, report)
+    check_readme(root, report)
 
     return print_report(report, verbose)
 
