@@ -179,7 +179,10 @@ def test_skill_file() -> None:
 
 def main() -> int:
     with tempfile.TemporaryDirectory() as raw_tmp:
-        tmp = Path(raw_tmp)
+        # The scripts print resolved paths. Windows hands out the 8.3 short form
+        # of the temp directory (`RUNNER~1`), so an unresolved path here would
+        # never match the `runneradmin` the scripts print.
+        tmp = Path(raw_tmp).resolve()
         test_skill_file()
         test_builder(tmp)
         test_builder_roots(tmp)
