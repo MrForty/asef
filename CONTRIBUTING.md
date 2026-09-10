@@ -20,6 +20,7 @@ across coding agents, and economical in context and token use.
 ```bash
 python tools/asef_lint.py --verbose
 python tools/test_asef_lint.py
+python tools/test_asef_skill.py
 ```
 
 ## Pull request scope
