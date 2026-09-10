@@ -52,7 +52,10 @@ def destinations(args: argparse.Namespace) -> list[Path]:
         targets.append(base / SKILL_NAME)
     if args.dest:
         targets.append(args.dest / SKILL_NAME)
-    return [t.resolve() for t in dict.fromkeys(targets)]
+    # Absolute but unresolved: a destination that is itself a symlink (a previous
+    # `--link` install) must stay the link. Resolving it would point `--force` at
+    # the skill the link references and delete that instead.
+    return [Path(os.path.abspath(t)) for t in dict.fromkeys(targets)]
 
 
 def install(target: Path, link: bool, force: bool, bundle: bool) -> None:

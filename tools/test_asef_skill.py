@@ -166,6 +166,41 @@ def test_installer(tmp: Path) -> None:
     check("installer: needs an agent or a destination", none.returncode == 2 and "--agent" in none.stderr)
 
 
+def test_installer_link(tmp: Path) -> None:
+    """`--force` over a `--link` install must delete the link, never its source.
+
+    The destination is a symlink back to the skill directory, so resolving it
+    would point the replacement at the source and `shutil.rmtree` would delete
+    the installed skill itself. The installer under test is a throwaway copy,
+    so a regression cannot reach the real skill.
+    """
+    sandbox = tmp / "sandbox" / "asef"
+    shutil.copytree(SKILL, sandbox, ignore=shutil.ignore_patterns("__pycache__", "framework"))
+    installer = sandbox / "scripts" / "install.py"
+
+    probe = tmp / "symlink-probe"
+    try:
+        os.symlink(tmp, probe, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        print("SKIP  installer: --link needs symlink privileges on this host")
+        return
+    probe.unlink()
+
+    project = tmp / "link-project"
+    project.mkdir()
+    target = project / ".claude" / "skills" / "asef"
+
+    linked = run(installer, "--agent", "claude", "--project", str(project), "--link")
+    check("installer: --link creates a symlink", linked.returncode == 0 and target.is_symlink(), linked.stderr)
+
+    refreshed = run(installer, "--agent", "claude", "--project", str(project), "--link", "--force")
+    check(
+        "installer: --force over a link replaces the link, not its source",
+        refreshed.returncode == 0 and (sandbox / "SKILL.md").is_file() and target.is_symlink(),
+        refreshed.stderr,
+    )
+
+
 def test_skill_file() -> None:
     text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
     front = re.match(r"---\n(.*?)\n---\n", text, re.S)
@@ -187,6 +222,7 @@ def main() -> int:
         test_builder(tmp)
         test_builder_roots(tmp)
         test_installer(tmp)
+        test_installer_link(tmp)
 
     print()
     if FAILURES:
