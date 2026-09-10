@@ -37,17 +37,25 @@ def kernel_version(root: Path) -> str:
     return match.group(1)
 
 
-def changelog_section(root: Path, version: str) -> str:
-    """Body of the `## <version>` entry, up to the next version heading."""
+def changelog_section(root: Path, version: str, fallback: str = "") -> str:
+    """Body of the `## <version>` entry, up to the next version heading.
+
+    A tag carries three components while the kernel declares two, so `v1.8.0`
+    looks for `## 1.8.0` and then falls back to the entry the kernel names.
+    """
     text = read(root / "CHANGELOG.md")
-    pattern = rf"^##\s+{re.escape(version)}\s*$\n(.*?)(?=^##\s+[0-9]|\Z)"
-    match = re.search(pattern, text, re.M | re.S)
-    if not match:
-        raise SystemExit(f"release: CHANGELOG.md has no `## {version}` entry")
-    body = match.group(1).strip()
-    if not body:
-        raise SystemExit(f"release: the `## {version}` entry in CHANGELOG.md is empty")
-    return body
+    candidates = [version] + ([fallback] if fallback and fallback != version else [])
+    for candidate in candidates:
+        pattern = rf"^##\s+{re.escape(candidate)}\s*$\n(.*?)(?=^##\s+[0-9]|\Z)"
+        match = re.search(pattern, text, re.M | re.S)
+        if not match:
+            continue
+        body = match.group(1).strip()
+        if not body:
+            raise SystemExit(f"release: the `## {candidate}` entry in CHANGELOG.md is empty")
+        return body
+    named = " or ".join(f"`## {c}`" for c in candidates)
+    raise SystemExit(f"release: CHANGELOG.md has no {named} entry")
 
 
 def resolve_version(root: Path, requested: str, ref: str) -> str:
@@ -79,7 +87,7 @@ def check_alignment(root: Path, version: str) -> None:
 
 def build(root: Path, version: str, title: str) -> tuple[str, str, str]:
     check_alignment(root, version)
-    notes = changelog_section(root, version)
+    notes = changelog_section(root, version, fallback=kernel_version(root))
     notes += f"\n\n---\n\nInstallation and usage: [README]({README_LINK}).\n"
     return tag_for(version), title.strip() or f"ASEF {tag_for(version)[1:]}", notes
 
@@ -117,8 +125,13 @@ def self_test() -> int:
         _, custom, _ = build(work, "1.8", "ASEF 1.8.0 - The skill")
         check("an explicit title is kept", custom == "ASEF 1.8.0 - The skill")
 
+        # Pushing `v1.8.0` resolves to 1.8.0, which the changelog never names.
+        tag, title, notes = build(work, "1.8.0", "")
+        check("a three-component tag finds the entry the kernel names",
+              tag == "v1.8.0" and "Summary line." in notes and "Older." not in notes)
+
         for label, version in (("a version the kernel does not declare", "2.0"),
-                               ("a version with no changelog entry", "1.8.5")):
+                               ("a version outside the declared line", "1.90")):
             try:
                 build(work, version, "")
             except SystemExit:
