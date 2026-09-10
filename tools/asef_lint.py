@@ -32,6 +32,13 @@ KERNEL_FILES = [
 
 ACTIVATION_PROMPT = "prompt universale ASEF.txt"
 
+# The `asef` skill: third activation method. It fills the request block of the
+# activation prompt at runtime and must point at the kernel, never restate it.
+SKILL_FILE = "skills/asef/SKILL.md"
+SKILL_SCRIPTS = ["skills/asef/scripts/asef_prompt.py", "skills/asef/scripts/install.py"]
+SKILL_POINTERS = [ACTIVATION_PROMPT, "asef/ASEF.md", "ROUTER.md", "CONTEXT-MANAGER.md", "scripts/asef_prompt.py"]
+SKILL_DESCRIPTION_LIMIT = 1536
+
 # Conditional checklists, not workflow nodes. Each entry names its load sites.
 GUIDE_CONSUMERS = {
     "guides/web-experience.md": [
@@ -137,7 +144,7 @@ TEMPLATE_SECTIONS = {
 
 # Approximate token ceilings (characters / 4). Compression is the point: a
 # change that trips one is a signal to cut, not to raise the ceiling.
-BUDGETS = {"kernel": 6000, "module": 1200, "prompt": 2400, "guide": 1200}
+BUDGETS = {"kernel": 6000, "module": 1200, "prompt": 2400, "guide": 1200, "skill": 1500}
 
 # Template rows CLAUDE.md declares mandatory: filled or marked N/A, never deleted.
 SPEC_NFR_ROWS = [
@@ -260,7 +267,8 @@ def estimated_tokens(text: str) -> int:
 
 def check_structure(root: Path, report: Report) -> dict[str, str]:
     """Expected files exist. Returns {module name: text} for later checks."""
-    for name in KERNEL_FILES + [ACTIVATION_PROMPT, "CHANGELOG.md", "README.md", *GUIDE_CONSUMERS]:
+    required = KERNEL_FILES + [ACTIVATION_PROMPT, "CHANGELOG.md", "README.md", *GUIDE_CONSUMERS]
+    for name in required + [SKILL_FILE, *SKILL_SCRIPTS]:
         if not (root / name).is_file():
             report.fail("structure", f"missing `{name}`")
 
@@ -623,7 +631,7 @@ def check_version(root: Path, report: Report) -> None:
 def check_references(root: Path, report: Report) -> None:
     """Every framework path a document names must exist."""
     docs = [root / n for n in KERNEL_FILES]
-    docs += [root / "CLAUDE.md", root / "README.md", root / ACTIVATION_PROMPT]
+    docs += [root / "CLAUDE.md", root / "README.md", root / ACTIVATION_PROMPT, root / SKILL_FILE]
     docs += sorted((root / "modules").glob("*.md"))
     docs += sorted((root / "templates").glob("*.md"))
     docs += sorted((root / "guides").glob("*.md"))
@@ -643,7 +651,7 @@ def check_references(root: Path, report: Report) -> None:
             target = candidate[len("asef/") :] if candidate.startswith("asef/") else candidate
             if target in REFERENCE_ALLOWLIST or Path(target).name in REFERENCE_ALLOWLIST:
                 continue
-            if (root / target).exists():
+            if (root / target).exists() or (doc.parent / target).exists():
                 continue
             if (root / "templates" / Path(target).name).exists():
                 continue
@@ -794,6 +802,40 @@ def check_readme(root: Path, report: Report) -> None:
     report.ok("README aligned (version badge, request block)")
 
 
+def skill_frontmatter(text: str) -> dict[str, str]:
+    """Top-level scalar keys of the YAML frontmatter; nested keys are skipped."""
+    match = re.match(r"---\n(.*?)\n---\n", text, re.S)
+    fields: dict[str, str] = {}
+    for line in (match.group(1) if match else "").splitlines():
+        key_value = re.match(r"^([A-Za-z][\w-]*):\s*(.*)$", line)
+        if key_value:
+            fields[key_value.group(1)] = key_value.group(2).strip().strip('"')
+    return fields
+
+
+def check_skill(root: Path, report: Report) -> None:
+    """The skill activates the kernel; it never carries a second copy of it."""
+    text = read(root / SKILL_FILE)
+    fields = skill_frontmatter(text)
+    if fields.get("name") != "asef":
+        report.fail(SKILL_FILE, "skill name must be `asef` so `/asef` invokes it")
+    description = fields.get("description", "")
+    if not description:
+        report.fail(SKILL_FILE, "frontmatter lacks a description")
+    elif len(description) > SKILL_DESCRIPTION_LIMIT:
+        report.fail(SKILL_FILE, f"description exceeds {SKILL_DESCRIPTION_LIMIT} characters")
+    for pointer in SKILL_POINTERS:
+        if f"`{pointer}`" not in text:
+            report.fail(SKILL_FILE, f"does not point the agent at `{pointer}`")
+    for rule, (phrase, owners) in SINGLE_HOME_RULES.items():
+        if phrase in text:
+            report.fail(SKILL_FILE, f"restates the {rule} owned by {', '.join(sorted(owners))}")
+    tokens = estimated_tokens(text)
+    if tokens > BUDGETS["skill"]:
+        report.fail(SKILL_FILE, f"~{tokens} tokens exceeds the skill budget")
+    report.ok(f"skill points at the kernel (~{tokens} tokens)")
+
+
 def check_guides(root: Path, report: Report) -> None:
     """A conditional checklist must remain reachable without becoming a module."""
     for guide, consumers in GUIDE_CONSUMERS.items():
@@ -834,6 +876,7 @@ def run(root: Path, verbose: bool) -> int:
     check_references(root, report)
     check_prompt_alignment(root, report)
     check_readme(root, report)
+    check_skill(root, report)
 
     return print_report(report, verbose)
 

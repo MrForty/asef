@@ -89,12 +89,82 @@ istruzioni letto dal tuo agente, per esempio `AGENTS.md` o `CLAUDE.md`. Da quel
 momento puoi inviare direttamente la richiesta; l'agente riparte da `STATE.md`
 quando esiste.
 
+**Attivazione con la skill `/asef`.** Installa
+[`skills/asef/`](skills/asef/) nella cartella skill del tuo agente e scrivi
+l'obiettivo dopo il comando: la skill compila il prompt universale e lo esegue,
+senza incollare nulla a mano. Vedi [La skill `/asef`](#la-skill-asef).
+
 ### 3. Lascia che ASEF scelga il percorso
 
 Con entrambe le attivazioni, il primo output (definito in
 [`ROUTER.md`](ROUTER.md)) dichiara route, modulo attivo, artefatti, capacità
 disponibili, prossima azione, gap e azioni umane. Non devi
 scegliere manualmente moduli, stack o route se non vuoi imporli come vincolo.
+
+## La skill `/asef`
+
+La skill è il file `skills/asef/SKILL.md`, nel formato Agent Skills, letto da Claude Code,
+Codex, Cursor, GitHub Copilot, Gemini CLI e dagli altri agent che adottano lo
+stesso formato. Non contiene una copia del framework: individua `asef/`, compila
+il blocco `## Richiesta` di `prompt universale ASEF.txt` con le parole
+dell'utente e consegna il prompt completo all'agente, che riparte dal
+`Bootstrap` come se lo avessi incollato tu.
+
+### Installazione
+
+Dalla cartella `asef/` del progetto (o da un clone di questa repository):
+
+```bash
+python3 asef/skills/asef/scripts/install.py --agent claude          # ./.claude/skills/asef
+python3 asef/skills/asef/scripts/install.py --agent codex --user    # ~/.agents/skills/asef
+python3 asef/skills/asef/scripts/install.py --dest <cartella skill> # qualsiasi altro agent
+python3 asef/skills/asef/scripts/install.py --list                  # percorsi noti
+```
+
+| `--agent` | Livello progetto | Livello utente |
+|---|---|---|
+| `claude` | `.claude/skills/asef` | `~/.claude/skills/asef` |
+| `codex`, `agents` | `.agents/skills/asef` | `~/.agents/skills/asef` |
+| `cursor` | `.cursor/skills/asef` | `~/.cursor/skills/asef` |
+| `copilot` | `.github/skills/asef` | `~/.copilot/skills/asef` |
+| `gemini` | `.gemini/skills/asef` | `~/.gemini/skills/asef` |
+| `opencode` | `.opencode/skills/asef` | `~/.config/opencode/skills/asef` |
+
+Sono i percorsi documentati da ciascun agent; se il tuo li cambia, usa
+`--dest`. Con `--bundle-framework` la skill porta con sé una copia del
+framework: installata a livello utente, `/asef init` crea `asef/` in qualsiasi
+progetto e `/asef <obiettivo>` funziona anche dove la cartella manca.
+
+### Uso
+
+| Comando | Effetto |
+|---|---|
+| `/asef <obiettivo>` | Compila il prompt e lo esegue: il router sceglie la route (`GREENFIELD`, `MODIFY`, `DIAGNOSE`, …) dalle evidenze |
+| `/asef prompt <obiettivo>` | Stampa soltanto il prompt, da incollare in un agent senza skill o da rivedere prima di eseguirlo |
+| `/asef init` | Installa il framework in `asef/` se manca |
+| `/asef status` | Riassume `STATE.md`: route, stato verificato, prossima azione, gap e azioni umane |
+
+Esempio:
+
+```text
+/asef Aggiungi alla pagina fatture un filtro per stato e cliente, mantenendo lo stack attuale e senza redesign; poi apri una pull request
+```
+
+La skill riporta nel blocco `Richiesta` solo ciò che hai detto: la frase come
+`Richiesta`, "mantenendo lo stack attuale" tra i vincoli, "senza redesign" tra i
+non-goal, `pull request` come autorizzazione di rilascio, gli artefatti
+rilevati nel progetto. I campi che non hai espresso restano vuoti: sono gap, e
+li tratta la gap policy del kernel, non la skill. Senza autorizzazione
+esplicita vale `nessuna`.
+
+Il generatore si può usare anche da solo, senza skill:
+
+```bash
+python3 asef/skills/asef/scripts/asef_prompt.py build --request "..." \
+  [--who ...] [--today ...] [--asked ...] [--verify ...] \
+  [--constraint ...]... [--non-goal ...]... [--release commit|"pull request"|merge|deploy] \
+  [--artifact ...]... [--spec PATH] [--route NAME] [--block-only]
+```
 
 ## Il prompt universale: cosa modificare
 
@@ -408,11 +478,14 @@ il tokenizer esatto di ogni modello.
 
 ASEF è composto soprattutto da contratti Markdown. Il linter verifica che i
 file continuino a concordare su struttura, route, moduli, trait, risk class,
-template, guide, riferimenti, vocabolario, versione, README e budget:
+template, guide, riferimenti, vocabolario, versione, README, skill e budget;
+i test della skill verificano che il prompt generato sia il prompt universale
+con il solo blocco `Richiesta` compilato:
 
 ```bash
 python3 tools/asef_lint.py -v
 python3 tools/test_asef_lint.py
+python3 tools/test_asef_skill.py
 ```
 
 Su Windows usa `python` al posto di `python3`. I controlli girano in CI su

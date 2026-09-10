@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+Third activation method: the `asef` skill.
+
+- `skills/asef/SKILL.md`: one Agent Skills file usable from Claude Code, Codex, Cursor, Copilot, Gemini CLI and any agent reading `SKILL.md`. `/asef <goal>` builds the activation prompt from the goal and executes it; `prompt <goal>` only prints it; `init` installs the framework into `asef/`; `status` reads `STATE.md`.
+- `scripts/asef_prompt.py` fills only the request block of `prompt universale ASEF.txt` at runtime, never a copy of it; detects existing artifacts; rewrites framework paths when the root is not `asef/`; warns on kernel/prompt drift.
+- `scripts/install.py` copies or links the skill into an agent's skills directory, optionally bundling the framework so the skill works in projects without `asef/`.
+- Linter: the skill must be named `asef`, point at the kernel, the router, the context manager and the builder, stay under 1,500 tokens and never restate a single-home rule. Six new mutation tests; `tools/test_asef_skill.py` covers the scripts and runs in CI.
+
 ## 1.8
 
 One behavior for both activations, less duplication, bounded memory.

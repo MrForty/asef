@@ -299,6 +299,36 @@ CASES: list[tuple[str, Callable[[Path], None], str]] = [
         mutate("README.md", "Richiesta: <una frase: cosa deve fare>", "Richiesta: <cosa deve fare>"),
         "request block differs",
     ),
+    (
+        "skill: SKILL.md missing",
+        drop_file("skills/asef/SKILL.md"),
+        "missing `skills/asef/SKILL.md`",
+    ),
+    (
+        "skill: renamed so `/asef` no longer invokes it",
+        mutate("skills/asef/SKILL.md", "name: asef", "name: asef-framework"),
+        "skill name must be `asef`",
+    ),
+    (
+        "skill: stops pointing at the prompt builder",
+        mutate_all("skills/asef/SKILL.md", "`scripts/asef_prompt.py`", "the builder script"),
+        "does not point the agent at `scripts/asef_prompt.py`",
+    ),
+    (
+        "skill: restates the uncertainty ladder",
+        append_text("skills/asef/SKILL.md", "\nResolve gaps as known → inferable → ask.\n"),
+        "restates the uncertainty ladder",
+    ),
+    (
+        "skill: dangling reference",
+        append_text("skills/asef/SKILL.md", "\nSee `scripts/missing.py`.\n"),
+        "references `scripts/missing.py`",
+    ),
+    (
+        "skill: over its token ceiling",
+        append_text("skills/asef/SKILL.md", "\n" + ("Read the kernel once more. " * 250)),
+        "skill budget",
+    ),
 ]
 
 

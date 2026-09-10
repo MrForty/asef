@@ -26,3 +26,6 @@ jobs:
 
       - name: Check the linter still catches breakage
         run: python tools/test_asef_lint.py
+
+      - name: Check the asef skill scripts
+        run: python tools/test_asef_skill.py
