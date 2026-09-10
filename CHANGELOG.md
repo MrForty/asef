@@ -1,17 +1,19 @@
 # Changelog
 
-## Unreleased
-
-Third activation method: the `asef` skill.
-
-- `skills/asef/SKILL.md`: one Agent Skills file usable from Claude Code, Codex, Cursor, Copilot, Gemini CLI and any agent reading `SKILL.md`. `/asef <goal>` builds the activation prompt from the goal and executes it; `prompt <goal>` only prints it; `init` installs the framework into `asef/`; `status` reads `STATE.md`.
-- `scripts/asef_prompt.py` fills only the request block of `prompt universale ASEF.txt` at runtime, never a copy of it; detects existing artifacts; rewrites framework paths when the root is not `asef/`; warns on kernel/prompt drift.
-- `scripts/install.py` copies or links the skill into an agent's skills directory, optionally bundling the framework so the skill works in projects without `asef/`.
-- Linter: the skill must be named `asef`, point at the kernel, the router, the context manager and the builder, stay under 1,500 tokens and never restate a single-home rule. Six new mutation tests; `tools/test_asef_skill.py` covers the scripts and runs in CI.
-
 ## 1.8
 
-One behavior for both activations, less duplication, bounded memory.
+The `/asef` skill, one behavior for every activation, less duplication, bounded memory.
+
+### The `/asef` skill
+
+A third way to activate ASEF, next to pasting the prompt and the permanent `AGENTS.md` block. It works in any agent that reads Agent Skills `SKILL.md` files: Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI and others.
+
+- `skills/asef/SKILL.md`: the skill itself. `/asef <goal>` builds the activation prompt from the goal and executes it, `prompt <goal>` only prints it, `init` installs the framework into `asef/`, `status` summarises `STATE.md`. It points at the kernel and never restates a rule the kernel owns.
+- `skills/asef/scripts/asef_prompt.py`: reads `prompt universale ASEF.txt` at runtime and fills only its request block, so the prompt keeps one home. Maps the user's words onto request, constraints, non-goals and release authorization; leaves unstated fields empty, because an empty field is a gap the kernel resolves; detects existing artifacts; rewrites framework paths when the root is not `asef/`; warns when the prompt and the kernel declare different versions.
+- `skills/asef/scripts/install.py`: copies or links the skill into an agent's skills directory, with the documented paths for seven agents and `--dest` for any other. `--bundle-framework` carries a framework copy alongside the skill, so `/asef` works in projects that have no `asef/` folder.
+- Linter: the skill must be named `asef`, point at the kernel, the router, the context manager and the builder, stay under 1,500 estimated tokens and never restate a rule with a single home. Six new mutation tests; `tools/test_asef_skill.py` covers the scripts and runs in CI on Linux and Windows.
+
+### Kernel and documents
 
 - First-output block moves from the activation prompt into `ROUTER.md` Output: the `AGENTS.md` activation now declares route, capabilities, gaps and human actions too. The prompt points to it and lists the routes a user may impose.
 - Promotion test moves from `modules/research.md` to `DECISION-ENGINE.md`: modules with only `USER-DECISION` gaps no longer load the research module for a decision rule. Its taste/cost exclusions merge with the question round's.

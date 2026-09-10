@@ -91,35 +91,93 @@ quando esiste.
 
 **Attivazione con la skill `/asef`.** Installa
 [`skills/asef/`](skills/asef/) nella cartella skill del tuo agente e scrivi
-l'obiettivo dopo il comando: la skill compila il prompt universale e lo esegue,
+l'obiettivo dopo il comando. La skill compila il prompt universale e lo esegue,
 senza incollare nulla a mano. Vedi [La skill `/asef`](#la-skill-asef).
+
+| Metodo | Quando conviene | Cosa devi fare ogni volta |
+|---|---|---|
+| Prompt universale | Agent senza supporto alle skill, o quando vuoi rileggere il prompt prima di inviarlo | Compilare il blocco `Richiesta` e incollare il file |
+| Blocco in `AGENTS.md` | Progetto singolo su cui lavori spesso | Scrivere la richiesta e basta |
+| Skill `/asef` | Uso quotidiano su più progetti e più agent | Scrivere `/asef` seguito dall'obiettivo |
+
+I tre metodi attivano lo stesso kernel e producono lo stesso comportamento.
+Cambia soltanto quanto testo devi fornire tu.
 
 ### 3. Lascia che ASEF scelga il percorso
 
-Con entrambe le attivazioni, il primo output (definito in
+Con qualsiasi metodo di attivazione, il primo output (definito in
 [`ROUTER.md`](ROUTER.md)) dichiara route, modulo attivo, artefatti, capacità
 disponibili, prossima azione, gap e azioni umane. Non devi
 scegliere manualmente moduli, stack o route se non vuoi imporli come vincolo.
 
 ## La skill `/asef`
 
-La skill è il file `skills/asef/SKILL.md`, nel formato Agent Skills, letto da Claude Code,
-Codex, Cursor, GitHub Copilot, Gemini CLI e dagli altri agent che adottano lo
-stesso formato. Non contiene una copia del framework: individua `asef/`, compila
-il blocco `## Richiesta` di `prompt universale ASEF.txt` con le parole
-dell'utente e consegna il prompt completo all'agente, che riparte dal
-`Bootstrap` come se lo avessi incollato tu.
+La skill è la terza via di attivazione, ed è quella pensata per l'uso
+quotidiano. Scrivi `/asef` seguito dall'obiettivo e il framework parte: non devi
+più aprire il prompt universale, compilarlo e incollarlo.
+
+### Che cosa fa, in concreto
+
+`skills/asef/SKILL.md` è un file nel formato Agent Skills, lo stesso che leggono
+Claude Code, Codex, Cursor, GitHub Copilot, Gemini CLI e altri agent. La skill
+**non contiene una copia del framework**: sarebbe una seconda fonte di verità
+destinata a divergere dal kernel. Fa quattro cose in sequenza.
+
+1. **Individua il framework.** Cerca `asef/` nel progetto, poi il progetto
+   stesso se è un clone di questa repository, poi una copia trasportata insieme
+   alla skill. Se non trova nulla te lo dice e si ferma, invece di improvvisare
+   il framework a memoria.
+2. **Legge il prompt universale a runtime.** Apre
+   [`prompt universale ASEF.txt`](prompt%20universale%20ASEF.txt) e ne compila
+   soltanto il blocco finale `Richiesta`. Tutto ciò che precede il blocco esce
+   identico all'originale, quindi il prompt resta l'unica fonte di verità.
+3. **Traduce le tue parole nei campi del blocco.** L'obiettivo diventa
+   `Richiesta`, i limiti che hai espresso diventano vincoli, ciò che escludi
+   diventa non-goal, l'eventuale permesso di rilascio diventa
+   `Autorizzazioni di rilascio`. Gli artefatti già presenti nel progetto li
+   rileva da sola.
+4. **Esegue il prompt.** L'agente riparte dal `Bootstrap`, legge il kernel,
+   classifica la route ed emette il primo output esattamente come se il prompt
+   lo avessi incollato tu.
+
+Il punto delicato è il terzo. La skill scrive **solo ciò che hai detto** e
+lascia vuoto tutto il resto. Un campo vuoto non è una mancanza da colmare di
+iniziativa: è un gap, e la gap policy del kernel decide se dedurlo, cercarlo o
+chiedertelo. Per lo stesso motivo la skill non concede mai un'autorizzazione di
+rilascio che non hai espresso: senza indicazioni vale `nessuna`.
+
+### Prerequisiti
+
+- Python 3.11 o successivo, già richiesto dagli strumenti della repository.
+- Un agent che legga le skill nel formato Agent Skills. Se il tuo non le supporta,
+  usa `/asef prompt <obiettivo>` da un agent che le supporta e incolla il
+  risultato, oppure invoca direttamente il generatore.
+- Il framework raggiungibile: la cartella `asef/` nel progetto, oppure una
+  copia trasportata dalla skill con `--bundle-framework`.
 
 ### Installazione
 
-Dalla cartella `asef/` del progetto (o da un clone di questa repository):
+L'installatore copia la skill nella cartella in cui il tuo agent cerca le
+skill. Eseguilo da un clone di questa repository, oppure dalla cartella `asef/`
+del progetto se hai già installato il framework.
 
 ```bash
-python3 asef/skills/asef/scripts/install.py --agent claude          # ./.claude/skills/asef
-python3 asef/skills/asef/scripts/install.py --agent codex --user    # ~/.agents/skills/asef
-python3 asef/skills/asef/scripts/install.py --dest <cartella skill> # qualsiasi altro agent
-python3 asef/skills/asef/scripts/install.py --list                  # percorsi noti
+# livello progetto: la skill vale solo in questo progetto
+python3 asef/skills/asef/scripts/install.py --agent claude
+
+# livello utente: la skill vale in tutti i tuoi progetti
+python3 asef/skills/asef/scripts/install.py --agent claude --user
+
+# qualsiasi altro agent: indica tu la cartella delle skill
+python3 asef/skills/asef/scripts/install.py --dest <cartella skill>
+
+# elenca i percorsi noti senza installare nulla
+python3 asef/skills/asef/scripts/install.py --list
 ```
+
+Su Windows usa `python` al posto di `python3`.
+
+#### Percorsi per agent
 
 | `--agent` | Livello progetto | Livello utente |
 |---|---|---|
@@ -130,41 +188,155 @@ python3 asef/skills/asef/scripts/install.py --list                  # percorsi n
 | `gemini` | `.gemini/skills/asef` | `~/.gemini/skills/asef` |
 | `opencode` | `.opencode/skills/asef` | `~/.config/opencode/skills/asef` |
 
-Sono i percorsi documentati da ciascun agent; se il tuo li cambia, usa
-`--dest`. Con `--bundle-framework` la skill porta con sé una copia del
-framework: installata a livello utente, `/asef init` crea `asef/` in qualsiasi
-progetto e `/asef <obiettivo>` funziona anche dove la cartella manca.
+Sono i percorsi documentati da ciascun agent al momento della pubblicazione. Se
+il tuo agent li cambia, o non è in elenco, usa `--dest` con la sua cartella:
+l'installazione è la stessa, cambia solo la destinazione.
+
+#### Opzioni dell'installatore
+
+| Opzione | A cosa serve |
+|---|---|
+| `--agent NOME` | Agent di destinazione. Ripetibile, per installare in più agent con un comando |
+| `--user` | Installa a livello utente invece che nel progetto corrente |
+| `--project DIR` | Progetto di destinazione, quando non è la cartella corrente |
+| `--dest DIR` | Cartella skill di un agent non in elenco |
+| `--link` | Crea un collegamento invece di copiare: la skill segue gli aggiornamenti della repository |
+| `--force` | Sostituisce un'installazione esistente |
+| `--bundle-framework` | Copia il framework accanto alla skill |
+| `--list` | Stampa i percorsi noti ed esce |
+
+`--bundle-framework` è l'opzione che rende la skill davvero universale.
+Installata a livello utente con il framework al seguito, `/asef` funziona anche
+nei progetti che non hanno la cartella `asef/`, e `/asef init` te la crea quando
+serve. Senza questa opzione la skill richiede che il framework sia già nel
+progetto.
+
+#### Verifica, aggiornamento e rimozione
+
+Per verificare che l'agent la veda, scrivi `/asef status` in un progetto con
+ASEF: risponde con lo stato corrente invece di iniziare un lavoro. In
+alternativa controlla il framework direttamente:
+
+```bash
+python3 asef/skills/asef/scripts/asef_prompt.py scan
+```
+
+Stampa la cartella del framework, la versione del kernel, la versione dichiarata
+dal prompt e gli artefatti trovati. È il primo comando da usare quando qualcosa
+non torna.
+
+Per aggiornare, riesegui l'installatore con `--force`. Per rimuovere la skill,
+cancella la cartella `asef` dalla directory skill del tuo agent.
 
 ### Uso
 
 | Comando | Effetto |
 |---|---|
-| `/asef <obiettivo>` | Compila il prompt e lo esegue: il router sceglie la route (`GREENFIELD`, `MODIFY`, `DIAGNOSE`, …) dalle evidenze |
-| `/asef prompt <obiettivo>` | Stampa soltanto il prompt, da incollare in un agent senza skill o da rivedere prima di eseguirlo |
+| `/asef <obiettivo>` | Compila il prompt e lo esegue. È il comando normale |
+| `/asef prompt <obiettivo>` | Stampa soltanto il prompt e si ferma |
 | `/asef init` | Installa il framework in `asef/` se manca |
-| `/asef status` | Riassume `STATE.md`: route, stato verificato, prossima azione, gap e azioni umane |
+| `/asef status` | Riassume `STATE.md` senza modificare nulla |
 
-Esempio:
+Non devi indicare se si tratta di creazione o di modifica: la route la sceglie
+il router dalle evidenze, cioè dalla richiesta, dagli artefatti presenti e dal
+codice. Un progetto vuoto porta a `GREENFIELD`, una modifica a un progetto
+esistente a `MODIFY`, un difetto a `DIAGNOSE`, e così via.
+
+#### Esempio: modifica di un progetto esistente
 
 ```text
 /asef Aggiungi alla pagina fatture un filtro per stato e cliente, mantenendo lo stack attuale e senza redesign; poi apri una pull request
 ```
 
-La skill riporta nel blocco `Richiesta` solo ciò che hai detto: la frase come
-`Richiesta`, "mantenendo lo stack attuale" tra i vincoli, "senza redesign" tra i
-non-goal, `pull request` come autorizzazione di rilascio, gli artefatti
-rilevati nel progetto. I campi che non hai espresso restano vuoti: sono gap, e
-li tratta la gap policy del kernel, non la skill. Senza autorizzazione
-esplicita vale `nessuna`.
+La skill costruisce questo blocco e lo consegna all'agent dentro il prompt
+completo:
 
-Il generatore si può usare anche da solo, senza skill:
+```
+Richiesta: Aggiungi alla pagina fatture un filtro per stato e cliente
+
+Contesto di prima mano:
+- chi ha il problema:
+- come lo risolve oggi:
+- chi me l'ha chiesto, e cosa ha fatto (non cosa ha detto):
+- come capisco che funziona:
+
+Vincoli non negoziabili:
+- mantenere lo stack attuale
+
+Non-goal:
+- redesign
+
+Autorizzazioni di rilascio: pull request
+
+Artefatti già esistenti: PROJECT.md, SPEC.md, STATE.md, README.md
+```
+
+Le quattro righe di contesto sono vuote perché non le hai dette. L'agente non le
+inventa: prova a dedurle dagli artefatti e dal codice, e te ne chiede una solo
+se blocca davvero lo scope. Gli artefatti in fondo non li hai elencati tu, li ha
+rilevati la skill nel progetto.
+
+#### Esempio: progetto nuovo
+
+```text
+/asef Realizza un sito per uno studio di architettura con portfolio e modulo di contatto funzionante, usando solo i contenuti che fornisco, senza area clienti
+```
+
+Route attesa `GREENFIELD`, con la guida
+[Web Experience](guides/web-experience.md). L'autorizzazione di rilascio resta
+`nessuna`, quindi il lavoro si ferma al risultato locale verificato.
+
+#### Esempio: solo il prompt
+
+```text
+/asef prompt Correggi il menu mobile che non si chiude dopo la selezione
+```
+
+Stampa il prompt completo senza eseguirlo. Serve per rileggerlo prima di
+avviare il lavoro, oppure per incollarlo in un agent che non supporta le skill.
+
+#### Come esprimere vincoli, esclusioni e permessi
+
+Non serve una sintassi speciale: scrivi in linguaggio naturale e la skill
+riconosce le formule più comuni.
+
+| Se scrivi | Finisce in |
+|---|---|
+| “mantenendo lo stack attuale”, “senza toccare le API”, “in italiano” | Vincoli non negoziabili |
+| “senza redesign”, “niente area clienti”, “non migrare il database” | Non-goal |
+| “poi committa”, “apri una pull request”, “fai il deploy” | Autorizzazioni di rilascio |
+| “il problema ce l'hanno gli operatori”, “oggi esportano in Excel” | Contesto di prima mano |
+
+Se vuoi imporre tu la route, dillo esplicitamente nell'obiettivo, per esempio
+“trattalo come una diagnosi”. Il router accetta un vincolo dell'utente, ma non
+lo indovina.
+
+### Il generatore senza la skill
+
+Lo stesso prompt si costruisce da riga di comando, utile per automazioni o per
+agent senza supporto alle skill:
 
 ```bash
 python3 asef/skills/asef/scripts/asef_prompt.py build --request "..." \
   [--who ...] [--today ...] [--asked ...] [--verify ...] \
-  [--constraint ...]... [--non-goal ...]... [--release commit|"pull request"|merge|deploy] \
-  [--artifact ...]... [--spec PATH] [--route NAME] [--block-only]
+  [--constraint ...]... [--non-goal ...]... \
+  [--release commit|"pull request"|merge|deploy] \
+  [--artifact ...]... [--spec PATH] [--route NOME] [--block-only]
 ```
+
+I comandi disponibili sono `build` per generare il prompt, `scan` per
+diagnosticare l'installazione e `init` per creare `asef/` in un progetto che non
+ce l'ha.
+
+### Se qualcosa non funziona
+
+| Sintomo | Causa e rimedio |
+|---|---|
+| L'agent non riconosce `/asef` | Skill nella cartella sbagliata. Controlla con `--list` e reinstalla, oppure usa `--dest` |
+| “no ASEF framework found” | Manca `asef/` nel progetto. Usa `/asef init`, oppure reinstalla la skill con `--bundle-framework` |
+| Avviso sulla versione del kernel | Prompt e kernel dichiarano versioni diverse. In conflitto vince il kernel; allinea la copia del framework |
+| L'agente fa domande che ritieni inutili | I campi di contesto sono vuoti e la risposta blocca lo scope. Fornisci il contesto nell'obiettivo |
+| L'agente non committa o non pubblica | Nessuna autorizzazione di rilascio. Va detta esplicitamente: il silenzio non autorizza |
 
 ## Il prompt universale: cosa modificare
 
