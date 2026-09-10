@@ -658,6 +658,7 @@ con il solo blocco `Richiesta` compilato:
 python3 tools/asef_lint.py -v
 python3 tools/test_asef_lint.py
 python3 tools/test_asef_skill.py
+python3 tools/release_notes.py --self-test
 ```
 
 Su Windows usa `python` al posto di `python3`. I controlli girano in CI su
@@ -667,6 +668,27 @@ Il linter dimostra coerenza strutturale; non dimostra che ogni modello seguirà
 sempre il framework né certifica qualità estetica, sicurezza o accessibilità di
 un progetto concreto. Gli scenari in [`examples/scenarios.md`](examples/scenarios.md)
 servono a misurare questi aspetti con agenti e progetti reali.
+
+## Versioni e release
+
+La versione vive in un posto solo: `asef.version` nel kernel. Cambiarla
+significa aggiornare tre file insieme, cioè [`ASEF.md`](ASEF.md), la riga
+`kernel vX.Y` del prompt universale e una nuova voce in
+[`CHANGELOG.md`](CHANGELOG.md). Il linter fallisce se i tre non concordano.
+
+La pubblicazione segue quella dichiarazione invece di ripeterla. Il workflow di
+release ricava tag, titolo e note da kernel e changelog, e si rifiuta di
+pubblicare una versione che il kernel non dichiara o che il changelog non
+descrive. Le note non si scrivono a mano: si corregge la voce del changelog e si
+ripubblica.
+
+| Come parte | Quando usarlo |
+|---|---|
+| Push di un tag `v*` | Rilascio normale dopo il bump della versione |
+| Avvio manuale del workflow `release` | Ripubblicare le note corrette, o rilasciare una versione già presente su `main` |
+
+Il tag porta tre componenti anche quando il kernel ne dichiara due: la versione
+`1.8` diventa il tag `v1.8.0`.
 
 ## Principi essenziali
 

@@ -21,6 +21,7 @@ across coding agents, and economical in context and token use.
 python tools/asef_lint.py --verbose
 python tools/test_asef_lint.py
 python tools/test_asef_skill.py
+python tools/release_notes.py --self-test
 ```
 
 ## Pull request scope
