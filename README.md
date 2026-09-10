@@ -171,6 +171,15 @@ python3 /tmp/asef-install/skills/asef/scripts/install.py --agent claude --user -
 rm -rf /tmp/asef-install
 ```
 
+**Sostituisci `claude` con il tuo agent.** Ogni agent cerca le skill in una
+cartella diversa, quindi il valore di `--agent` decide dove finisce
+l'installazione: con `claude` la skill arriva solo dove la cerca Claude Code. I
+valori accettati sono `claude`, `codex`, `agents`, `cursor`, `copilot`,
+`gemini` e `opencode`, elencati con i rispettivi percorsi nella
+[tabella più sotto](#percorsi-per-agent); per un agent non compreso, usa
+`--dest` con la sua cartella skill. Il comando `--list` li stampa senza
+installare niente.
+
 `--user` la rende disponibile in tutti i tuoi progetti e `--bundle-framework`
 le fa portare con sé il framework, quindi `/asef` funziona anche dove non
 esiste la cartella `asef/`. Fatta l'installazione la copia temporanea non serve
@@ -210,8 +219,9 @@ python3 asef/skills/asef/scripts/install.py --dest <cartella skill>
 python3 asef/skills/asef/scripts/install.py --list
 ```
 
-In questo caso `--bundle-framework` non serve: la skill trova `asef/` nel
-progetto. Su Windows usa `python` al posto di `python3`.
+Anche qui `claude` va sostituito con il tuo agent. In questo caso
+`--bundle-framework` non serve: la skill trova `asef/` nel progetto. Su Windows
+usa `python` al posto di `python3`.
 
 #### Percorsi per agent
 
