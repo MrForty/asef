@@ -157,9 +157,44 @@ rilascio che non hai espresso: senza indicazioni vale `nessuna`.
 
 ### Installazione
 
-L'installatore copia la skill nella cartella in cui il tuo agent cerca le
-skill. Eseguilo da un clone di questa repository, oppure dalla cartella `asef/`
-del progetto se hai già installato il framework.
+Due punti di partenza: prendere tutto da GitHub, se non hai ancora nulla in
+locale, oppure usare la copia del framework che hai già nel progetto.
+
+#### Da GitHub
+
+Serve soltanto git e Python. Il comando scarica la repository pubblica in una
+cartella temporanea e installa la skill insieme a una copia del framework:
+
+```bash
+git clone --depth 1 https://github.com/MrForty/asef.git /tmp/asef-install && \
+python3 /tmp/asef-install/skills/asef/scripts/install.py --agent claude --user --bundle-framework && \
+rm -rf /tmp/asef-install
+```
+
+`--user` la rende disponibile in tutti i tuoi progetti e `--bundle-framework`
+le fa portare con sé il framework, quindi `/asef` funziona anche dove non
+esiste la cartella `asef/`. Fatta l'installazione la copia temporanea non serve
+più e il comando la cancella.
+
+Per installarla solo nel progetto corrente, sostituisci `--user` con
+`--project .`. Per fissare una versione precisa invece dell'ultimo stato di
+`main`, aggiungi al clone `--branch <tag>` con uno dei tag elencati nella
+pagina [Releases](https://github.com/MrForty/asef/releases).
+
+Su Windows lo stesso comando diventa, in PowerShell:
+
+```powershell
+git clone --depth 1 https://github.com/MrForty/asef.git $env:TEMP\asef-install
+python $env:TEMP\asef-install\skills\asef\scripts\install.py --agent claude --user --bundle-framework
+Remove-Item -Recurse -Force $env:TEMP\asef-install
+```
+
+Se preferisci non installare nulla nella cartella utente, clona la repository
+dove vuoi e usa `--dest` con la cartella skill del tuo agent.
+
+#### Da una copia locale
+
+Se il framework è già in `asef/`, l'installatore è dentro di esso:
 
 ```bash
 # livello progetto: la skill vale solo in questo progetto
@@ -175,7 +210,8 @@ python3 asef/skills/asef/scripts/install.py --dest <cartella skill>
 python3 asef/skills/asef/scripts/install.py --list
 ```
 
-Su Windows usa `python` al posto di `python3`.
+In questo caso `--bundle-framework` non serve: la skill trova `asef/` nel
+progetto. Su Windows usa `python` al posto di `python3`.
 
 #### Percorsi per agent
 
