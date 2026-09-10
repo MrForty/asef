@@ -157,9 +157,53 @@ rilascio che non hai espresso: senza indicazioni vale `nessuna`.
 
 ### Installazione
 
-L'installatore copia la skill nella cartella in cui il tuo agent cerca le
-skill. Eseguilo da un clone di questa repository, oppure dalla cartella `asef/`
-del progetto se hai già installato il framework.
+Due punti di partenza: prendere tutto da GitHub, se non hai ancora nulla in
+locale, oppure usare la copia del framework che hai già nel progetto.
+
+#### Da GitHub
+
+Serve soltanto git e Python. Il comando scarica la repository pubblica in una
+cartella temporanea e installa la skill insieme a una copia del framework:
+
+```bash
+git clone --depth 1 https://github.com/MrForty/asef.git /tmp/asef-install && \
+python3 /tmp/asef-install/skills/asef/scripts/install.py --agent claude --user --bundle-framework && \
+rm -rf /tmp/asef-install
+```
+
+**Sostituisci `claude` con il tuo agent.** Ogni agent cerca le skill in una
+cartella diversa, quindi il valore di `--agent` decide dove finisce
+l'installazione: con `claude` la skill arriva solo dove la cerca Claude Code. I
+valori accettati sono `claude`, `codex`, `agents`, `cursor`, `copilot`,
+`gemini` e `opencode`, elencati con i rispettivi percorsi nella
+[tabella più sotto](#percorsi-per-agent); per un agent non compreso, usa
+`--dest` con la sua cartella skill. Il comando `--list` li stampa senza
+installare niente.
+
+`--user` la rende disponibile in tutti i tuoi progetti e `--bundle-framework`
+le fa portare con sé il framework, quindi `/asef` funziona anche dove non
+esiste la cartella `asef/`. Fatta l'installazione la copia temporanea non serve
+più e il comando la cancella.
+
+Per installarla solo nel progetto corrente, sostituisci `--user` con
+`--project .`. Per fissare una versione precisa invece dell'ultimo stato di
+`main`, aggiungi al clone `--branch <tag>` con uno dei tag elencati nella
+pagina [Releases](https://github.com/MrForty/asef/releases).
+
+Su Windows lo stesso comando diventa, in PowerShell:
+
+```powershell
+git clone --depth 1 https://github.com/MrForty/asef.git $env:TEMP\asef-install
+python $env:TEMP\asef-install\skills\asef\scripts\install.py --agent claude --user --bundle-framework
+Remove-Item -Recurse -Force $env:TEMP\asef-install
+```
+
+Se preferisci non installare nulla nella cartella utente, clona la repository
+dove vuoi e usa `--dest` con la cartella skill del tuo agent.
+
+#### Da una copia locale
+
+Se il framework è già in `asef/`, l'installatore è dentro di esso:
 
 ```bash
 # livello progetto: la skill vale solo in questo progetto
@@ -175,7 +219,9 @@ python3 asef/skills/asef/scripts/install.py --dest <cartella skill>
 python3 asef/skills/asef/scripts/install.py --list
 ```
 
-Su Windows usa `python` al posto di `python3`.
+Anche qui `claude` va sostituito con il tuo agent. In questo caso
+`--bundle-framework` non serve: la skill trova `asef/` nel progetto. Su Windows
+usa `python` al posto di `python3`.
 
 #### Percorsi per agent
 
