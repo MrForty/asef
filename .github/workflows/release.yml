@@ -1,0 +1,68 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (default: the version ASEF.md declares)"
+        required: false
+        type: string
+      title:
+        description: "Release title (default: ASEF <version>)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # A release must not diverge from the documents that declare it, so the
+      # invariants gate publication exactly as they gate a push.
+      - name: Check framework invariants
+        run: python tools/asef_lint.py --verbose
+
+      - name: Check the release rules
+        run: python tools/release_notes.py --self-test
+
+      # Inputs reach the script as environment variables, never interpolated
+      # into the shell.
+      - name: Derive tag, title and notes
+        id: release
+        env:
+          REQUESTED: ${{ inputs.version }}
+          TITLE: ${{ inputs.title }}
+          REF_NAME: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          python tools/release_notes.py \
+            --requested "$REQUESTED" \
+            --ref "$REF_NAME" \
+            --title "$TITLE" \
+            --out notes.md \
+            --github-output
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          TITLE: ${{ steps.release.outputs.title }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "Release $TAG exists; updating its title and notes."
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" --notes-file notes.md --latest
+          else
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --title "$TITLE" --notes-file notes.md --latest
+          fi
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName,name,isLatest
