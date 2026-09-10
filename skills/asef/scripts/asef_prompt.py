@@ -113,6 +113,8 @@ def rewrite_paths(prompt: str, root_display: str) -> str:
     """The prompt names the framework as `asef/`; point it at the real root."""
     if root_display in ("asef", ""):
         return prompt
+    # Ensure root_display doesn't have trailing slash before adding it back
+    root_display = root_display.rstrip("/")
     return prompt.replace("`asef/", f"`{root_display}/")
 
 
