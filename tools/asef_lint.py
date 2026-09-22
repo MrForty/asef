@@ -37,7 +37,13 @@ ACTIVATION_PROMPT = "prompt universale ASEF.txt"
 SKILL_FILE = "skills/asef/SKILL.md"
 SKILL_SCRIPTS = ["skills/asef/scripts/asef_prompt.py", "skills/asef/scripts/install.py"]
 SKILL_POINTERS = [ACTIVATION_PROMPT, "asef/ASEF.md", "ROUTER.md", "CONTEXT-MANAGER.md", "scripts/asef_prompt.py"]
-SKILL_DESCRIPTION_LIMIT = 1536
+# Agent Skills specification (agentskills.io/specification): the only top-level
+# frontmatter fields every agent accepts, and their limits. Agent-specific keys
+# belong under `metadata`, or a strict validator rejects the whole skill.
+SKILL_FIELDS = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
+SKILL_NAME_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
+SKILL_DESCRIPTION_LIMIT = 1024
+SKILL_COMPATIBILITY_LIMIT = 500
 
 # Conditional checklists, not workflow nodes. Each entry names its load sites.
 GUIDE_CONSUMERS = {
@@ -819,11 +825,18 @@ def check_skill(root: Path, report: Report) -> None:
     fields = skill_frontmatter(text)
     if fields.get("name") != "asef":
         report.fail(SKILL_FILE, "skill name must be `asef` so `/asef` invokes it")
+    name = fields.get("name", "")
+    if not re.fullmatch(SKILL_NAME_PATTERN, name) or name != Path(SKILL_FILE).parent.name:
+        report.fail(SKILL_FILE, "skill name must be lowercase-hyphenated and match its directory")
+    for field in sorted(set(fields) - SKILL_FIELDS):
+        report.fail(SKILL_FILE, f"frontmatter field `{field}` is not in the Agent Skills specification; move it under `metadata`")
     description = fields.get("description", "")
     if not description:
         report.fail(SKILL_FILE, "frontmatter lacks a description")
     elif len(description) > SKILL_DESCRIPTION_LIMIT:
         report.fail(SKILL_FILE, f"description exceeds {SKILL_DESCRIPTION_LIMIT} characters")
+    if len(fields.get("compatibility", "")) > SKILL_COMPATIBILITY_LIMIT:
+        report.fail(SKILL_FILE, f"compatibility exceeds {SKILL_COMPATIBILITY_LIMIT} characters")
     for pointer in SKILL_POINTERS:
         if f"`{pointer}`" not in text:
             report.fail(SKILL_FILE, f"does not point the agent at `{pointer}`")
@@ -833,7 +846,7 @@ def check_skill(root: Path, report: Report) -> None:
     tokens = estimated_tokens(text)
     if tokens > BUDGETS["skill"]:
         report.fail(SKILL_FILE, f"~{tokens} tokens exceeds the skill budget")
-    report.ok(f"skill points at the kernel (~{tokens} tokens)")
+    report.ok(f"skill follows the Agent Skills spec and points at the kernel (~{tokens} tokens)")
 
 
 def check_guides(root: Path, report: Report) -> None:

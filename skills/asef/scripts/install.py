@@ -22,6 +22,9 @@ import shutil
 import sys
 from pathlib import Path
 
+sys.dont_write_bytecode = True  # keep installed skill folders free of __pycache__
+from asef_prompt import bundled_root, copy_runtime  # sibling script: one runtime set
+
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SKILL_NAME = "asef"
 
@@ -35,13 +38,6 @@ AGENTS: dict[str, tuple[str, str]] = {
     "gemini": (".gemini/skills", "~/.gemini/skills"),
     "opencode": (".opencode/skills", "~/.config/opencode/skills"),
 }
-
-
-def framework_root() -> Path | None:
-    for candidate in (SKILL_DIR / "framework", SKILL_DIR.parent.parent):
-        if (candidate / "ASEF.md").is_file() and (candidate / "prompt universale ASEF.txt").is_file():
-            return candidate
-    return None
 
 
 def destinations(args: argparse.Namespace) -> list[Path]:
@@ -75,13 +71,10 @@ def install(target: Path, link: bool, force: bool, bundle: bool) -> None:
 
     shutil.copytree(SKILL_DIR, target, ignore=shutil.ignore_patterns("__pycache__", "framework"))
     if bundle:
-        root = framework_root()
+        root = bundled_root()
         if root is None:
             raise SystemExit("install: no framework to bundle; run from a clone of the ASEF repository")
-        shutil.copytree(
-            root, target / "framework",
-            ignore=shutil.ignore_patterns(".git", ".github", "__pycache__", "skills", "docs", "examples"),
-        )
+        copy_runtime(root, target / "framework")
     print(f"install: copied skill to {target}" + (" (framework bundled)" if bundle else ""))
 
 

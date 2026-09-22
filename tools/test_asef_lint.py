@@ -325,6 +325,21 @@ CASES: list[tuple[str, Callable[[Path], None], str]] = [
         "references `scripts/missing.py`",
     ),
     (
+        "skill: agent-specific frontmatter field outside `metadata`",
+        mutate("skills/asef/SKILL.md", "license: MIT", "license: MIT\nargument-hint: \"<goal>\""),
+        "`argument-hint` is not in the Agent Skills specification",
+    ),
+    (
+        "skill: description over the specification limit",
+        mutate("skills/asef/SKILL.md", "description: Run a software task", "description: " + "x" * 1024 + " Run a software task"),
+        "description exceeds 1024",
+    ),
+    (
+        "skill: compatibility over the specification limit",
+        mutate("skills/asef/SKILL.md", "compatibility: Any agent", "compatibility: " + "x" * 500 + " Any agent"),
+        "compatibility exceeds 500",
+    ),
+    (
         "skill: over its token ceiling",
         append_text("skills/asef/SKILL.md", "\n" + ("Read the kernel once more. " * 250)),
         "skill budget",

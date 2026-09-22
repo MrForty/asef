@@ -51,6 +51,20 @@ jobs:
             --out notes.md \
             --github-output
 
+      # Two ready-to-use archives, built by the same scripts users run, so they
+      # carry exactly the runtime set: the skill with the framework bundled
+      # (unzip into any agent's skills folder), and the framework alone
+      # (unzip into a project as `asef/`).
+      - name: Build the release archives
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          python skills/asef/scripts/install.py --dest dist/skill --bundle-framework
+          python skills/asef/scripts/asef_prompt.py --project dist/project init
+          (cd dist/skill && python -m zipfile -c "../asef-skill-$TAG.zip" asef)
+          (cd dist/project && python -m zipfile -c "../asef-framework-$TAG.zip" asef)
+          ls -l dist/*.zip
+
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -65,4 +79,5 @@ jobs:
             gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" --title "$TITLE" --notes-file notes.md --latest
           fi
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName,name,isLatest
+          gh release upload "$TAG" dist/*.zip --repo "$GITHUB_REPOSITORY" --clobber
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName,name,isLatest,assets

@@ -13,6 +13,15 @@ A third way to activate ASEF, next to pasting the prompt and the permanent `AGEN
 - `skills/asef/scripts/install.py`: copies or links the skill into an agent's skills directory, with the documented paths for seven agents and `--dest` for any other. `--bundle-framework` carries a framework copy alongside the skill, so `/asef` works in projects that have no `asef/` folder.
 - Linter: the skill must be named `asef`, point at the kernel, the router, the context manager and the builder, stay under 1,500 estimated tokens and never restate a rule with a single home. Six new mutation tests; `tools/test_asef_skill.py` covers the scripts and runs in CI on Linux and Windows.
 
+### Skill portability and distribution
+
+No kernel change; the skill and its scripts only.
+
+- `SKILL.md` frontmatter follows the Agent Skills specification: `argument-hint` moves under `metadata`, `license` and `compatibility` are declared. Strict validators rejected the skill before. Linter: only specification fields at top level, name matches its directory, description within 1,024 and compatibility within 500 characters. Three new mutation tests.
+- One runtime set: `init`, `install.py --bundle-framework` and the release archives copy only the kernel, the prompt, `modules/`, `templates/`, `guides/`, the changelog and the license. The repository's `CLAUDE.md`, linter and CI no longer reach target projects, where agents loading nested instruction files read them as project rules.
+- `/asef upgrade` (`asef_prompt.py init --upgrade`): refreshes the framework files in `asef/` from the skill's newer copy, refuses a downgrade, never touches project artifacts. `scan` reports `bundled_version` and `upgrade_available`.
+- Each release attaches `asef-skill-<tag>.zip` (skill with the framework bundled) and `asef-framework-<tag>.zip` (framework alone): install by unzipping, without git.
+
 ### Kernel and documents
 
 - First-output block moves from the activation prompt into `ROUTER.md` Output: the `AGENTS.md` activation now declares route, capabilities, gaps and human actions too. The prompt points to it and lists the routes a user may impose.
