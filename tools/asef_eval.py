@@ -126,15 +126,52 @@ def agents_block() -> str:
     return re.sub(r"<!--.*?-->", "", read(AGENTS_TEMPLATE), flags=re.S).strip() + "\n"
 
 
-def git_baseline(project: Path) -> str:
-    if (project / ".git").exists():
-        return "fixture repository kept"
+def git(project: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", *GIT_IDENTITY, *args], cwd=project, capture_output=True, text=True, check=check)
+
+
+def isolate_git(project: Path, fixture: Path) -> str | None:
+    """Replace a copied `.git` pointer file with a repository of the project's own.
+
+    A linked worktree or a submodule keeps its metadata elsewhere: `.git` is a
+    file naming an absolute `gitdir`. Copied as is, the agent's git commands
+    would stage, commit or reset in the source fixture. The new repository
+    holds the fixture's HEAD commit; the copied files, dirty state included,
+    stay as they are.
+    """
+    marker = project / ".git"
+    if not marker.is_file():
+        return None
+    marker.unlink()
+    if shutil.which("git") is None:
+        return "fixture git pointer removed; git unavailable"
+    git(project, "init", "-q")
+    if git(project, "fetch", "-q", str(fixture.resolve()), "HEAD", check=False).returncode != 0:
+        return "fixture git pointer replaced by an empty repository (fixture HEAD unreadable)"
+    git(project, "reset", "-q", "FETCH_HEAD")
+    return "fixture git metadata isolated at its HEAD"
+
+
+def git_baseline(project: Path, harness: list[str]) -> str:
+    """Commit what the harness added, so the agent starts from a clean baseline.
+
+    A fresh repository commits everything. A fixture repository commits only
+    the harness paths, so its own dirty state (staged or not) stays exactly
+    as the case requires.
+    """
     if shutil.which("git") is None:
         return "git unavailable: no baseline commit"
-    subprocess.run(["git", "init", "-q"], cwd=project, check=True)
-    subprocess.run(["git", "add", "-A"], cwd=project, check=True)
-    subprocess.run(["git", *GIT_IDENTITY, "commit", "-q", "--allow-empty", "-m", "asef-eval baseline"], cwd=project, check=True)
-    return "baseline commit created"
+    if not (project / ".git").exists():
+        git(project, "init", "-q")
+        git(project, "add", "-A")
+        git(project, "commit", "-q", "--allow-empty", "-m", "asef-eval baseline")
+        return "baseline commit created"
+    paths = [p for p in harness if (project / p).exists()]
+    git(project, "add", "-f", "--", *paths)
+    if git(project, "diff", "--cached", "--quiet", "--", *paths, check=False).returncode == 0:
+        return "harness already committed in the fixture repository; its own changes left as they were"
+    git(project, "commit", "-q", "--only", "-m", "asef-eval harness", "--", *paths)
+    return "harness committed on the fixture repository; its own changes left as they were"
 
 
 def result_template(s: Scenario, activation: str, lang: str, baseline: str) -> str:
@@ -177,8 +214,11 @@ def cmd_prepare(s: Scenario, args: argparse.Namespace) -> int:
         print(f"asef_eval: {out} is not empty", file=sys.stderr)
         return 2
     project = out / "project"
+    isolated = None
+    harness = ["asef"]
     if args.fixture:
         shutil.copytree(args.fixture, project, ignore=shutil.ignore_patterns("asef"))
+        isolated = isolate_git(project, args.fixture)
     else:
         project.mkdir(parents=True)
         print(f"asef_eval: no --fixture, the project starts empty; {s.case} describes: {s.fixture}", file=sys.stderr)
@@ -188,12 +228,14 @@ def cmd_prepare(s: Scenario, args: argparse.Namespace) -> int:
         target = project / "AGENTS.md"
         prefix = read(target).rstrip("\n") + "\n\n" if target.is_file() else ""
         target.write_text(prefix + agents_block(), encoding="utf-8")
+        harness.append("AGENTS.md")
         message = s.request + "\n"
     elif args.activation == "skill":
         installed = run_script(INSTALLER, "--agent", args.skill_agent, "--project", str(project))
         if installed.returncode != 0:
             print(installed.stderr, file=sys.stderr)
             return 1
+        harness.append(f"{AGENTS[args.skill_agent][0]}/asef")
         message = f"/asef {s.request}\n"
     else:
         built = run_script(BUILDER, "--project", str(project), "build", "--request", s.request, "--lang", args.lang)
@@ -202,7 +244,9 @@ def cmd_prepare(s: Scenario, args: argparse.Namespace) -> int:
             return 1
         message = built.stdout
 
-    baseline = git_baseline(project)
+    baseline = git_baseline(project, harness)
+    if isolated:
+        baseline = f"{isolated}; {baseline}"
     (out / "MESSAGE.txt").write_text(message, encoding="utf-8")
     (out / "RESULT.md").write_text(result_template(s, args.activation, args.lang, baseline), encoding="utf-8")
     print(f"asef_eval: {s.case} prepared in {out}")
@@ -238,19 +282,38 @@ def observed_route(project: Path) -> str | None:
     return found[0] if len(found) == 1 else None
 
 
-def evaluate(run: Path) -> tuple[list[str], dict[str, str]]:
-    """Problems that make the record incomplete, and the judged summary."""
+def canonical_criteria(s: Scenario) -> list[tuple[str, str, str]]:
+    """The rows `prepare` writes for a case: the only rows a record may judge."""
+    return [(f"E{i}", "expect", c) for i, c in enumerate(s.expected, 1)] + [
+        (f"F{i}", "fail-if", c) for i, c in enumerate(s.fail_if, 1)
+    ]
+
+
+def evaluate(run: Path, scenarios: dict[str, Scenario] | None = None) -> tuple[list[str], dict[str, str]]:
+    """Problems that make the record incomplete, and the judged summary.
+
+    Criteria and expected route come from `examples/scenarios.md`, never from
+    the editable record: a deleted, reworded or added row, or an edited route,
+    makes the record incomplete instead of silently changing the verdict.
+    """
     record = parse_record(run / "RESULT.md")
     problems = [f"`{name}` is not filled" for name in REQUIRED_FIELDS if record.fields.get(name, "") in UNFILLED]
-    if not record.criteria:
-        problems.append("no criteria rows")
+    scenario = (scenarios or load_scenarios()).get(record.fields.get("case", ""))
+    if scenario is None:
+        problems.append(f"case `{record.fields.get('case', '')}` is not in examples/scenarios.md")
+    else:
+        rows = [(r["id"], r["kind"], r["criterion"]) for r in record.criteria]
+        if rows != canonical_criteria(scenario):
+            problems.append(f"criteria differ from case {scenario.case} in examples/scenarios.md; re-run `prepare`")
+        if record.fields.get("expected route", "") != (scenario.route or "not checked"):
+            problems.append(f"expected route differs from case {scenario.case} in examples/scenarios.md")
     for row in record.criteria:
         if row["verdict"] not in VERDICTS:
             problems.append(f"{row['id']}: verdict `{row['verdict']}` is not PASS, FAIL or OPEN")
         elif not row["evidence"]:
             problems.append(f"{row['id']}: {row['verdict']} without evidence")
 
-    expected = record.fields.get("expected route", "")
+    expected = (scenario.route or "") if scenario else ""
     route = observed_route(run / "project")
     verdicts = [row["verdict"] for row in record.criteria]
     if expected in ROUTES:
@@ -294,8 +357,9 @@ def cmd_report(paths: list[Path]) -> int:
         return 2
     rows = []
     incomplete = 0
+    scenarios = load_scenarios()
     for run in runs:
-        problems, summary = evaluate(run)
+        problems, summary = evaluate(run, scenarios)
         incomplete += bool(problems)
         rows.append(summary)
     columns = sorted({f"{r['agent']} / {r['activation']}" for r in rows})

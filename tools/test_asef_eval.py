@@ -103,6 +103,48 @@ def test_prepare(tmp: Path) -> None:
     check("prepare: rejects an unknown case", unknown.returncode == 2 and "unknown case" in unknown.stderr)
 
 
+def git(cwd: Path, *args: str, check: bool = True) -> str:
+    identity = ["-c", "user.name=t", "-c", "user.email=t@localhost", "-c", "init.defaultBranch=main"]
+    return subprocess.run(["git", *identity, *args], cwd=cwd, capture_output=True, text=True, check=check).stdout
+
+
+def test_fixture_repositories(tmp: Path) -> None:
+    """A fixture's git state is the case's baseline; the harness must not blur or leak it."""
+    source = tmp / "source"
+    source.mkdir(parents=True)
+    git(source, "init", "-q")
+    (source / "form.js").write_text("validate()\n", encoding="utf-8")
+    (source / "notes.txt").write_text("v1\n", encoding="utf-8")
+    git(source, "add", "-A")
+    git(source, "commit", "-q", "-m", "fixture")
+    (source / "notes.txt").write_text("v2, unrelated dirty edit\n", encoding="utf-8")
+
+    repo_run = tmp / "a2-repo"
+    result = run("prepare", "A2", "--out", str(repo_run), "--activation", "agents", "--fixture", str(source))
+    project = repo_run / "project"
+    status = git(project, "status", "--porcelain")
+    check("fixture repo: harness files are committed, not left dirty", result.returncode == 0 and "asef" not in status and "AGENTS.md" not in status, status + result.stderr)
+    check("fixture repo: the fixture's own dirty state is preserved", " M notes.txt" in status, status)
+    check("fixture repo: record states how the baseline was made", "harness committed on the fixture repository" in (repo_run / "RESULT.md").read_text(encoding="utf-8"))
+
+    rerun = tmp / "a2-rerun"
+    result = run("prepare", "A2", "--out", str(rerun), "--fixture", str(repo_run / "project"))
+    check("fixture repo: a fixture that already carries the harness prepares cleanly", result.returncode == 0 and "harness already committed" in (rerun / "RESULT.md").read_text(encoding="utf-8"), result.stderr)
+
+    worktree = tmp / "linked"
+    git(source, "worktree", "add", "-q", "--detach", str(worktree))
+    (worktree / "form.js").write_text("validate() // dirty in worktree\n", encoding="utf-8")
+    source_head = git(source, "rev-parse", "HEAD").strip()
+    wt_run = tmp / "a2-worktree"
+    result = run("prepare", "A2", "--out", str(wt_run), "--fixture", str(worktree))
+    project = wt_run / "project"
+    check("worktree fixture: the copy gets its own repository", result.returncode == 0 and (project / ".git").is_dir(), result.stderr)
+    check("worktree fixture: history starts at the fixture's HEAD with its dirty edit", git(project, "rev-parse", "HEAD~1", check=False).strip() == source_head and " M form.js" in git(project, "status", "--porcelain"))
+    git(project, "add", "-A", check=False)
+    git(project, "commit", "-q", "-m", "agent work", check=False)
+    check("worktree fixture: commits in the run never reach the source", git(source, "rev-parse", "HEAD").strip() == source_head and " M form.js" in git(worktree, "status", "--porcelain"))
+
+
 def test_check(tmp: Path) -> None:
     run_dir = tmp / "judged"
     run("prepare", "W4", "--out", str(run_dir))
@@ -138,6 +180,23 @@ def test_check(tmp: Path) -> None:
     failed = run("check", str(other))
     check("check: one failed criterion fails the run", failed.returncode == 0 and "| FAIL |" in failed.stdout)
 
+    tampered = tmp / "tampered"
+    run("prepare", "W4", "--out", str(tampered))
+    fill(tampered / "RESULT.md")
+    write_state(tampered / "project", "DIAGNOSE")
+    record = tampered / "RESULT.md"
+    original = record.read_text(encoding="utf-8")
+    record.write_text(re.sub(r"^\| F3 \|.*\n", "", original, flags=re.M), encoding="utf-8")
+    dropped = run("check", str(tampered))
+    check("check: a deleted criterion makes the record incomplete", dropped.returncode == 1 and "criteria differ from case W4" in dropped.stdout and "| PASS |" not in dropped.stdout, dropped.stdout)
+    record.write_text(original.replace("| expected route | DIAGNOSE |", "| expected route | GREENFIELD |"), encoding="utf-8")
+    rerouted = run("check", str(tampered))
+    check("check: an edited expected route is rejected and the canonical one judged", rerouted.returncode == 1 and "expected route differs" in rerouted.stdout and "(expected DIAGNOSE)" in rerouted.stdout, rerouted.stdout)
+    record.write_text(original.replace("| case | W4 |", "| case | Z9 |"), encoding="utf-8")
+    unknown = run("check", str(tampered))
+    check("check: a record for an unknown case is incomplete", unknown.returncode == 1 and "not in examples/scenarios.md" in unknown.stdout, unknown.stdout)
+    record.write_text(original, encoding="utf-8")
+
     run("prepare", "W1", "--out", str(tmp / "unfilled"))
     report = run("report", str(tmp))
     check(
@@ -152,6 +211,7 @@ def main() -> int:
         tmp = Path(raw_tmp).resolve()
         test_scenarios()
         test_prepare(tmp / "prepare")
+        test_fixture_repositories(tmp / "repos")
         test_check(tmp / "check")
 
     print()
