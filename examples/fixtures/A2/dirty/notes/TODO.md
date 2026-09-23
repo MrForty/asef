@@ -1,0 +1,1 @@
+- ask design about the new pricing table (unrelated work in progress)

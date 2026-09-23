@@ -23,21 +23,10 @@ import sys
 from pathlib import Path
 
 sys.dont_write_bytecode = True  # keep installed skill folders free of __pycache__
-from asef_prompt import bundled_root, copy_runtime  # sibling script: one runtime set
+from asef_prompt import AGENTS, bundled_root, copy_runtime  # sibling script: one home for each
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SKILL_NAME = "asef"
-
-# agent: (project-level skills directory, user-level skills directory)
-AGENTS: dict[str, tuple[str, str]] = {
-    "claude": (".claude/skills", "~/.claude/skills"),
-    "codex": (".agents/skills", "~/.agents/skills"),
-    "agents": (".agents/skills", "~/.agents/skills"),
-    "cursor": (".cursor/skills", "~/.cursor/skills"),
-    "copilot": (".github/skills", "~/.copilot/skills"),
-    "gemini": (".gemini/skills", "~/.gemini/skills"),
-    "opencode": (".opencode/skills", "~/.config/opencode/skills"),
-}
 
 
 def destinations(args: argparse.Namespace) -> list[Path]:

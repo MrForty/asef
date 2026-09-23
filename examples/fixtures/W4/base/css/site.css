@@ -1,0 +1,14 @@
+body { margin: 0; font-family: Georgia, serif; color: #1d1d1b; }
+.site-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; }
+.brand { font-weight: bold; text-decoration: none; color: inherit; }
+.site-nav a { margin-left: 1.25rem; color: inherit; }
+.nav-button { display: none; }
+main { padding: 2rem 1.5rem; }
+
+@media (max-width: 700px) {
+  .site-header { flex-wrap: wrap; }
+  .nav-button { display: block; }
+  .site-nav { display: none; width: 100%; }
+  .site-nav.is-open { display: block; }
+  .site-nav a { display: block; margin: 0.75rem 0 0; }
+}

@@ -1,7 +1,7 @@
-Lavori con il framework ASEF nella cartella `asef/`. Questo prompt attiva il kernel v1.8.
+Lavori con il framework ASEF nella cartella `asef/`. Questo prompt attiva il kernel v1.9.
 
 ## Bootstrap
-1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, risk class, controllo di versione, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano. Se `asef.version` nel kernel non è `1.8`, dichiara il disallineamento nel primo output e segui il file: in conflitto vince il kernel, non questo prompt.
+1. Leggi `asef/ASEF.md`. È il kernel: defaults, runtime, gap policy, trait, risk class, controllo di versione, Definition of Done. Le regole qui sotto non lo sostituiscono, lo attivano. Se `asef.version` nel kernel non è `1.9`, dichiara il disallineamento nel primo output e segui il file: in conflitto vince il kernel, non questo prompt.
 2. Se esistono, leggi `STATE.md` e `LEARNINGS.md`.
 3. Classifica la richiesta con `asef/ROUTER.md`.
 4. Carica il modulo scelto e il contesto necessario; applica le guide condizionali del Runtime. Siti nuovi e progetti esistenti usano le stesse route, senza fasi aggiuntive.

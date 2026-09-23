@@ -75,7 +75,7 @@ qa? → ship → DONE
 
 ## Output
 
-Before any work, under either activation method, emit this block once in the user's language, then record intent, active module, reason, required inputs and next gate in `STATE.md`:
+Before any work, under every activation method, emit this block once in the user's language, then record intent, active module, reason, required inputs and next gate in `STATE.md`:
 
 ```text
 Route:         <route>

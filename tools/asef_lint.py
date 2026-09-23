@@ -31,11 +31,20 @@ KERNEL_FILES = [
 ]
 
 ACTIVATION_PROMPT = "prompt universale ASEF.txt"
+# The same prompt in every language it ships in, keyed by the label that opens
+# its request block. The Italian original is the reference the others mirror.
+ACTIVATION_PROMPTS = {
+    ACTIVATION_PROMPT: "Richiesta:",
+    "ASEF universal prompt.txt": "Request:",
+}
 
 # The `asef` skill: third activation method. It fills the request block of the
 # activation prompt at runtime and must point at the kernel, never restate it.
 SKILL_FILE = "skills/asef/SKILL.md"
 SKILL_SCRIPTS = ["skills/asef/scripts/asef_prompt.py", "skills/asef/scripts/install.py"]
+# Loaded on demand, only for occasional commands: kept out of SKILL.md so every
+# invocation pays for the common path alone.
+SKILL_REFERENCES = ["skills/asef/references/commands.md"]
 SKILL_POINTERS = [ACTIVATION_PROMPT, "asef/ASEF.md", "ROUTER.md", "CONTEXT-MANAGER.md", "scripts/asef_prompt.py"]
 # Agent Skills specification (agentskills.io/specification): the only top-level
 # frontmatter fields every agent accepts, and their limits. Agent-specific keys
@@ -150,7 +159,7 @@ TEMPLATE_SECTIONS = {
 
 # Approximate token ceilings (characters / 4). Compression is the point: a
 # change that trips one is a signal to cut, not to raise the ceiling.
-BUDGETS = {"kernel": 6000, "module": 1200, "prompt": 2400, "guide": 1200, "skill": 1500}
+BUDGETS = {"kernel": 6000, "module": 1200, "prompt": 2400, "guide": 1200, "skill": 1500, "skill reference": 800}
 
 # Template rows CLAUDE.md declares mandatory: filled or marked N/A, never deleted.
 SPEC_NFR_ROWS = [
@@ -195,6 +204,9 @@ REFERENCE_ALLOWLIST = {
     "AGENTS.md",
     "CLAUDE.md",
     "tasks/TASK-NNN.md",
+    # Files `tools/asef_eval.py prepare` writes into a run folder.
+    "MESSAGE.txt",
+    "RESULT.md",
 }
 
 
@@ -273,8 +285,8 @@ def estimated_tokens(text: str) -> int:
 
 def check_structure(root: Path, report: Report) -> dict[str, str]:
     """Expected files exist. Returns {module name: text} for later checks."""
-    required = KERNEL_FILES + [ACTIVATION_PROMPT, "CHANGELOG.md", "README.md", *GUIDE_CONSUMERS]
-    for name in required + [SKILL_FILE, *SKILL_SCRIPTS]:
+    required = KERNEL_FILES + [*ACTIVATION_PROMPTS, "CHANGELOG.md", "README.md", *GUIDE_CONSUMERS]
+    for name in required + [SKILL_FILE, *SKILL_SCRIPTS, *SKILL_REFERENCES]:
         if not (root / name).is_file():
             report.fail("structure", f"missing `{name}`")
 
@@ -621,15 +633,17 @@ def check_version(root: Path, report: Report) -> None:
             f"latest entry is `{entries[0]}` but ASEF.md declares `{version}`",
         )
 
-    prompt = read(root / ACTIVATION_PROMPT)
-    declared = re.search(r"kernel\s+v([0-9]+(?:\.[0-9]+)*)", prompt)
-    if not declared:
-        report.fail(ACTIVATION_PROMPT, "does not declare the kernel version it activates")
-    elif declared.group(1) != version:
-        report.fail(
-            ACTIVATION_PROMPT,
-            f"activates kernel v{declared.group(1)} but ASEF.md declares v{version}",
-        )
+    for name in ACTIVATION_PROMPTS:
+        prompt = read(root / name)
+        declared = re.search(r"kernel\s+v([0-9]+(?:\.[0-9]+)*)", prompt)
+        if not declared:
+            report.fail(name, "does not declare the kernel version it activates")
+        elif declared.group(1) != version:
+            report.fail(name, f"activates kernel v{declared.group(1)} but ASEF.md declares v{version}")
+        # The bootstrap step repeats the version it expects; both must move together.
+        stale = [v for v in re.findall(r"`([0-9]+\.[0-9]+)`", prompt) if v != version]
+        if stale:
+            report.fail(name, f"bootstrap expects kernel `{stale[0]}` but ASEF.md declares `{version}`")
 
     report.ok(f"version alignment (v{version})")
 
@@ -637,7 +651,7 @@ def check_version(root: Path, report: Report) -> None:
 def check_references(root: Path, report: Report) -> None:
     """Every framework path a document names must exist."""
     docs = [root / n for n in KERNEL_FILES]
-    docs += [root / "CLAUDE.md", root / "README.md", root / ACTIVATION_PROMPT, root / SKILL_FILE]
+    docs += [root / "CLAUDE.md", root / "README.md", *(root / n for n in ACTIVATION_PROMPTS), root / SKILL_FILE]
     docs += sorted((root / "modules").glob("*.md"))
     docs += sorted((root / "templates").glob("*.md"))
     docs += sorted((root / "guides").glob("*.md"))
@@ -670,9 +684,10 @@ def check_references(root: Path, report: Report) -> None:
 
 
 def check_prompt_alignment(root: Path, report: Report) -> None:
-    """The activation prompt names every route, trait and label the kernel
-    defines; a name missing there is a rule the user can never invoke."""
-    prompt = read(root / ACTIVATION_PROMPT)
+    """Every activation prompt names every route, trait and label the kernel
+    defines; a name missing there is a rule the user can never invoke. The
+    translations point at the same files and carry a request block of the same
+    shape as the original, so the builder fills them line for line."""
     asef = read(root / "ASEF.md")
     traits = [t for t in table_first_column(section(asef, "Project traits")) if t]
     classes = [c for c in table_first_column(section(asef, "Risk classes")) if c]
@@ -684,16 +699,52 @@ def check_prompt_alignment(root: Path, report: Report) -> None:
         ("gap label", GAP_LABELS, "`{}`"),
         ("evidence label", EVIDENCE_LABELS, "`{}`"),
     ]
-    for kind, names, fmt in expectations:
-        for name in names:
-            if fmt.format(name) not in prompt:
-                report.fail(ACTIVATION_PROMPT, f"never names {kind} `{name}`")
+    reference_pointers: set[str] | None = None
+    reference_shape: list[str] | None = None
+    for name, opener in ACTIVATION_PROMPTS.items():
+        prompt = read(root / name)
+        for kind, names, fmt in expectations:
+            for item in names:
+                if fmt.format(item) not in prompt:
+                    report.fail(name, f"never names {kind} `{item}`")
 
-    for path in ("asef/ASEF.md", "asef/ROUTER.md", "asef/modules/ship.md"):
-        if f"`{path}`" not in prompt:
-            report.fail(ACTIVATION_PROMPT, f"does not point the agent at `{path}`")
+        for path in ("asef/ASEF.md", "asef/ROUTER.md", "asef/modules/ship.md"):
+            if f"`{path}`" not in prompt:
+                report.fail(name, f"does not point the agent at `{path}`")
 
-    report.ok("activation prompt aligned with the kernel")
+        pointers = set(re.findall(r"`(asef/[^`]+)`", prompt))
+        block = request_block(prompt, "", opener)
+        shape = request_shape(block) if block else None
+        if block is None:
+            report.fail(name, f"no request block starting with `{opener}`")
+        if reference_pointers is None:
+            reference_pointers, reference_shape = pointers, shape
+            continue
+        if pointers != reference_pointers:
+            drift = sorted(pointers ^ reference_pointers)
+            report.fail(name, f"points at different framework files than `{ACTIVATION_PROMPT}`: {', '.join(drift)}")
+        if shape is not None and shape != reference_shape:
+            report.fail(name, f"request block differs in shape from `{ACTIVATION_PROMPT}`")
+
+    report.ok(f"activation prompts aligned with the kernel ({len(ACTIVATION_PROMPTS)} languages)")
+
+
+def request_shape(block: str) -> list[str]:
+    """Line kinds of a request block: what a translation must preserve."""
+    kinds = []
+    for line in block.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            kinds.append("blank")
+        elif stripped == "-":
+            kinds.append("placeholder")
+        elif stripped.startswith("- "):
+            kinds.append("context field")
+        elif stripped.endswith(":"):
+            kinds.append("heading")
+        else:
+            kinds.append("field")
+    return kinds
 
 
 def check_budget(root: Path, modules: dict[str, str], report: Report) -> None:
@@ -716,11 +767,12 @@ def check_budget(root: Path, modules: dict[str, str], report: Report) -> None:
         if tokens > BUDGETS["guide"]:
             report.fail(path.relative_to(root).as_posix(), f"~{tokens} tokens exceeds the guide budget")
 
-    prompt_tokens = estimated_tokens(read(root / ACTIVATION_PROMPT))
-    if prompt_tokens > BUDGETS["prompt"]:
-        report.fail(
-            ACTIVATION_PROMPT, f"~{prompt_tokens} tokens exceeds the {BUDGETS['prompt']} budget"
-        )
+    prompt_tokens = 0
+    for name in ACTIVATION_PROMPTS:
+        tokens = estimated_tokens(read(root / name))
+        prompt_tokens = max(prompt_tokens, tokens)
+        if tokens > BUDGETS["prompt"]:
+            report.fail(name, f"~{tokens} tokens exceeds the {BUDGETS['prompt']} budget")
 
     report.ok(
         f"token budget (kernel ~{kernel_tokens}, largest module "
@@ -781,8 +833,8 @@ def check_router_output(root: Path, report: Report) -> None:
     report.ok(f"router output block ({len(ROUTER_OUTPUT_FIELDS)} fields)")
 
 
-def request_block(text: str, fence: str) -> str | None:
-    match = re.search(rf"```{fence}\n(Richiesta:.*?)```", text, re.S)
+def request_block(text: str, fence: str, opener: str = "Richiesta:") -> str | None:
+    match = re.search(rf"```{fence}\n({re.escape(opener)}.*?)```", text, re.S)
     return match.group(1).strip() if match else None
 
 
@@ -846,6 +898,15 @@ def check_skill(root: Path, report: Report) -> None:
     tokens = estimated_tokens(text)
     if tokens > BUDGETS["skill"]:
         report.fail(SKILL_FILE, f"~{tokens} tokens exceeds the skill budget")
+    for reference in SKILL_REFERENCES:
+        if f"`{Path(reference).relative_to(Path(SKILL_FILE).parent).as_posix()}`" not in text:
+            report.fail(SKILL_FILE, f"never points at `{reference}`, so the agent cannot load it")
+        ref_text = read(root / reference)
+        for rule, (phrase, owners) in SINGLE_HOME_RULES.items():
+            if phrase in ref_text:
+                report.fail(reference, f"restates the {rule} owned by {', '.join(sorted(owners))}")
+        if estimated_tokens(ref_text) > BUDGETS["skill reference"]:
+            report.fail(reference, f"~{estimated_tokens(ref_text)} tokens exceeds the skill reference budget")
     report.ok(f"skill follows the Agent Skills spec and points at the kernel (~{tokens} tokens)")
 
 

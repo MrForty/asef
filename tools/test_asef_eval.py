@@ -1,0 +1,262 @@
+#!/usr/bin/env python3
+"""Tests for `tools/asef_eval.py`: the scenario harness keeps its promise.
+
+The harness promises that every scenario is parsed into judgeable criteria,
+that a run folder carries the runtime framework and exactly one activation,
+and that a record is judged from evidence, with the route read from
+`STATE.md` rather than self-reported. Standard library only.
+
+    python3 tools/test_asef_eval.py
+"""
+
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+EVAL = ROOT / "tools" / "asef_eval.py"
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(ROOT / "tools"))
+import asef_eval  # noqa: E402 - module under test
+
+FAILURES: list[str] = []
+
+
+def run(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(EVAL), *args],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+
+
+def check(label: str, condition: bool, detail: str = "") -> None:
+    print(f"{'PASS' if condition else 'FAIL'}  {label}")
+    if not condition:
+        FAILURES.append(f"{label}\n{detail.strip()}")
+
+
+def fill(record: Path, verdict: str = "PASS", evidence: str = "screenshots/menu-narrow.png") -> None:
+    text = record.read_text(encoding="utf-8")
+    text = text.replace("| agent/version | ? |", "| agent/version | test-agent 1.0 |")
+    text = text.replace("| tools | ? |", "| tools | files, execution, git |")
+    text = re.sub(r"^(\| [EF][0-9]+ \| [^|]+ \| [^|]+ \| )[^|]+ \| [^|]*\|$", rf"\g<1>{verdict} | {evidence} |", text, flags=re.M)
+    record.write_text(text, encoding="utf-8")
+
+
+def write_state(project: Path, route: str) -> None:
+    (project / "STATE.md").write_text(f"# State\n\n**Status:** `DONE`  \n**Intent:** `{route}`  \n", encoding="utf-8")
+
+
+def test_scenarios() -> None:
+    scenarios = asef_eval.load_scenarios()
+    check("scenarios: every case of the table is parsed", len(scenarios) == 10 and {"W1", "W4", "E1"} <= set(scenarios), ", ".join(scenarios))
+    check("scenarios: every case has a request and criteria of both kinds", all(s.request and s.expected and s.fail_if for s in scenarios.values()))
+    check("scenarios: expected routes are real routes", all(s.route in (None, *asef_eval.ROUTES) for s in scenarios.values()))
+    check("scenarios: the route is taken out of the criteria", scenarios["W4"].route == "DIAGNOSE" and "DIAGNOSE" not in scenarios["W4"].expected)
+    listing = run("list")
+    check("list: names every case", listing.returncode == 0 and all(case in listing.stdout for case in scenarios))
+
+
+def test_prepare(tmp: Path) -> None:
+    prompt_run = tmp / "w4-prompt"
+    result = run("prepare", "W4", "--out", str(prompt_run))
+    project = prompt_run / "project"
+    check("prepare: builds the run folder", result.returncode == 0 and (project / "asef" / "ASEF.md").is_file() and (prompt_run / "RESULT.md").is_file(), result.stderr)
+    check("prepare: the framework copy is the runtime set only", not (project / "asef" / "CLAUDE.md").exists() and not (project / "asef" / "tools").exists())
+    message = (prompt_run / "MESSAGE.txt").read_text(encoding="utf-8")
+    check("prepare: prompt activation sends the filled prompt", "## Bootstrap" in message and "Richiesta: Fix the mobile menu." in message)
+    check("prepare: a case with a built-in fixture uses it", "built-in fixture examples/fixtures/W4" in (prompt_run / "RESULT.md").read_text(encoding="utf-8") and (project / "js" / "menu.js").is_file())
+    bare = run("prepare", "W1", "--out", str(tmp / "w1-bare"))
+    check("prepare: warns when no fixture exists for the case", bare.returncode == 0 and "no --fixture" in bare.stderr, bare.stderr)
+    record = (prompt_run / "RESULT.md").read_text(encoding="utf-8")
+    check("prepare: record lists the criteria of the case", "| F1 | fail-if | GREENFIELD solely because STATE/SPEC is absent | ? |  |" in record and "| expected route | DIAGNOSE |" in record)
+
+    english = run("prepare", "W4", "--out", str(tmp / "w4-en"), "--lang", "en")
+    check("prepare: --lang en sends the English prompt", english.returncode == 0 and "Request: Fix the mobile menu." in (tmp / "w4-en" / "MESSAGE.txt").read_text(encoding="utf-8"), english.stderr)
+
+    fixture = tmp / "fixture"
+    fixture.mkdir()
+    (fixture / "index.html").write_text("<nav></nav>\n", encoding="utf-8")
+    (fixture / "AGENTS.md").write_text("# Project rules\n", encoding="utf-8")
+    agents_run = tmp / "w4-agents"
+    result = run("prepare", "W4", "--out", str(agents_run), "--activation", "agents", "--fixture", str(fixture))
+    agents_md = (agents_run / "project" / "AGENTS.md").read_text(encoding="utf-8")
+    check("prepare: fixture copied", result.returncode == 0 and (agents_run / "project" / "index.html").is_file(), result.stderr)
+    check("prepare: agents activation appends the block to the fixture's AGENTS.md", agents_md.startswith("# Project rules") and "asef/ASEF.md" in agents_md and "<!--" not in agents_md)
+    check("prepare: agents activation sends the bare request", (agents_run / "MESSAGE.txt").read_text(encoding="utf-8") == "Fix the mobile menu.\n")
+
+    skill_run = tmp / "w4-skill"
+    result = run("prepare", "W4", "--out", str(skill_run), "--activation", "skill", "--skill-agent", "claude")
+    check(
+        "prepare: skill activation installs the skill and sends /asef",
+        result.returncode == 0 and (skill_run / "project" / ".claude" / "skills" / "asef" / "SKILL.md").is_file()
+        and (skill_run / "MESSAGE.txt").read_text(encoding="utf-8") == "/asef Fix the mobile menu.\n",
+        result.stderr,
+    )
+
+    again = run("prepare", "W4", "--out", str(prompt_run))
+    check("prepare: refuses a non-empty run folder", again.returncode == 2 and "not empty" in again.stderr)
+    unknown = run("prepare", "Z9", "--out", str(tmp / "z9"))
+    check("prepare: rejects an unknown case", unknown.returncode == 2 and "unknown case" in unknown.stderr)
+
+
+def git(cwd: Path, *args: str, check: bool = True) -> str:
+    identity = ["-c", "user.name=t", "-c", "user.email=t@localhost", "-c", "init.defaultBranch=main"]
+    return subprocess.run(["git", *identity, *args], cwd=cwd, capture_output=True, text=True, check=check).stdout
+
+
+def test_fixture_repositories(tmp: Path) -> None:
+    """A fixture's git state is the case's baseline; the harness must not blur or leak it."""
+    source = tmp / "source"
+    source.mkdir(parents=True)
+    git(source, "init", "-q")
+    (source / "form.js").write_text("validate()\n", encoding="utf-8")
+    (source / "notes.txt").write_text("v1\n", encoding="utf-8")
+    git(source, "add", "-A")
+    git(source, "commit", "-q", "-m", "fixture")
+    (source / "notes.txt").write_text("v2, unrelated dirty edit\n", encoding="utf-8")
+
+    repo_run = tmp / "a2-repo"
+    result = run("prepare", "A2", "--out", str(repo_run), "--activation", "agents", "--fixture", str(source))
+    project = repo_run / "project"
+    status = git(project, "status", "--porcelain")
+    check("fixture repo: harness files are committed, not left dirty", result.returncode == 0 and "asef" not in status and "AGENTS.md" not in status, status + result.stderr)
+    check("fixture repo: the fixture's own dirty state is preserved", " M notes.txt" in status, status)
+    check("fixture repo: record states how the baseline was made", "harness committed on the fixture repository" in (repo_run / "RESULT.md").read_text(encoding="utf-8"))
+
+    rerun = tmp / "a2-rerun"
+    result = run("prepare", "A2", "--out", str(rerun), "--fixture", str(repo_run / "project"))
+    check("fixture repo: a fixture that already carries the harness prepares cleanly", result.returncode == 0 and "harness already committed" in (rerun / "RESULT.md").read_text(encoding="utf-8"), result.stderr)
+
+    worktree = tmp / "linked"
+    git(source, "worktree", "add", "-q", "--detach", str(worktree))
+    (worktree / "form.js").write_text("validate() // dirty in worktree\n", encoding="utf-8")
+    source_head = git(source, "rev-parse", "HEAD").strip()
+    wt_run = tmp / "a2-worktree"
+    result = run("prepare", "A2", "--out", str(wt_run), "--fixture", str(worktree))
+    project = wt_run / "project"
+    check("worktree fixture: the copy gets its own repository", result.returncode == 0 and (project / ".git").is_dir(), result.stderr)
+    check("worktree fixture: history starts at the fixture's HEAD with its dirty edit", git(project, "rev-parse", "HEAD~1", check=False).strip() == source_head and " M form.js" in git(project, "status", "--porcelain"))
+    git(project, "add", "-A", check=False)
+    git(project, "commit", "-q", "-m", "agent work", check=False)
+    check("worktree fixture: commits in the run never reach the source", git(source, "rev-parse", "HEAD").strip() == source_head and " M form.js" in git(worktree, "status", "--porcelain"))
+
+
+def test_builtin_fixtures(tmp: Path) -> None:
+    """Each built-in fixture reproduces the state its case describes."""
+    scenarios = asef_eval.load_scenarios()
+    shipped = sorted(p.name for p in asef_eval.FIXTURES.iterdir() if p.is_dir())
+    check("fixtures: every built-in fixture belongs to a case and has a base", all(n in scenarios and (asef_eval.FIXTURES / n / "base").is_dir() for n in shipped), ", ".join(shipped))
+
+    def prepared(case: str) -> Path:
+        result = run("prepare", case, "--out", str(tmp / case))
+        check(f"fixtures: {case} prepares", result.returncode == 0, result.stderr)
+        return tmp / case / "project"
+
+    def unittest_run(project: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.run([sys.executable, "-m", "unittest"], cwd=project, capture_output=True, text=True)
+
+    w4 = prepared("W4")
+    check("fixtures: W4 starts clean with the broken menu selector", git(w4, "status", "--porcelain") == "" and ".nav-toggle" in (w4 / "js" / "menu.js").read_text(encoding="utf-8") and 'class="nav-button"' in (w4 / "index.html").read_text(encoding="utf-8"))
+
+    a2 = prepared("A2")
+    status = git(a2, "status", "--porcelain")
+    tests = unittest_run(a2)
+    check("fixtures: A2 carries unrelated uncommitted edits", " M app/config.py" in status and "?? notes/" in status and "asef" not in status, status)
+    check("fixtures: A2 has exactly one known failing test", tests.returncode != 0 and "FAILED (failures=1)" in tests.stderr and "test_cents_add_up" in tests.stderr, tests.stderr)
+    defect = subprocess.run([sys.executable, "-c", "from app.forms import validate_signup; print(validate_signup('anna@', 'correct-horse'))"], cwd=a2, capture_output=True, text=True)
+    check("fixtures: A2 reproduces the validation defect", defect.stdout.strip() == "[]", defect.stdout + defect.stderr)
+
+    e1 = prepared("E1")
+    tests = unittest_run(e1)
+    check("fixtures: E1 holds a completed, passing, uncommitted change", " M slug.py" in git(e1, "status", "--porcelain") and tests.returncode == 0, tests.stderr)
+    check("fixtures: E1 has no remote to publish to", git(e1, "remote").strip() == "")
+
+
+def test_check(tmp: Path) -> None:
+    run_dir = tmp / "judged"
+    run("prepare", "W4", "--out", str(run_dir))
+    project = run_dir / "project"
+
+    empty = run("check", str(run_dir))
+    check("check: an unfilled record is incomplete", empty.returncode == 1 and "`agent/version` is not filled" in empty.stdout and "is not PASS, FAIL or OPEN" in empty.stdout)
+
+    fill(run_dir / "RESULT.md", evidence="")
+    no_evidence = run("check", str(run_dir))
+    check("check: a verdict without evidence is incomplete", no_evidence.returncode == 1 and "PASS without evidence" in no_evidence.stdout)
+
+    fill(run_dir / "RESULT.md")
+    missing_state = run("check", str(run_dir))
+    check("check: without STATE.md the route stays OPEN", missing_state.returncode == 0 and "| OPEN |" in missing_state.stdout and "none recorded" in missing_state.stdout, missing_state.stdout)
+
+    write_state(project, "DIAGNOSE")
+    passed = run("check", str(run_dir))
+    check("check: all criteria and the route observed is a PASS", passed.returncode == 0 and "| PASS |" in passed.stdout and "DIAGNOSE (expected DIAGNOSE)" in passed.stdout, passed.stdout)
+
+    write_state(project, "GREENFIELD")
+    wrong_route = run("check", str(run_dir))
+    check("check: a wrong route in STATE.md is a FAIL", "| FAIL |" in wrong_route.stdout and "GREENFIELD (expected DIAGNOSE)" in wrong_route.stdout, wrong_route.stdout)
+
+    write_state(project, "GREENFIELD | MODIFY | DIAGNOSE")
+    template = run("check", str(run_dir))
+    check("check: an unfilled Intent line records no route", "none recorded" in template.stdout, template.stdout)
+
+    other = tmp / "other"
+    run("prepare", "R1", "--out", str(other))
+    fill(other / "RESULT.md", verdict="FAIL", evidence="src/app.css changed")
+    write_state(other / "project", "REVIEW_ONLY")
+    failed = run("check", str(other))
+    check("check: one failed criterion fails the run", failed.returncode == 0 and "| FAIL |" in failed.stdout)
+
+    tampered = tmp / "tampered"
+    run("prepare", "W4", "--out", str(tampered))
+    fill(tampered / "RESULT.md")
+    write_state(tampered / "project", "DIAGNOSE")
+    record = tampered / "RESULT.md"
+    original = record.read_text(encoding="utf-8")
+    record.write_text(re.sub(r"^\| F3 \|.*\n", "", original, flags=re.M), encoding="utf-8")
+    dropped = run("check", str(tampered))
+    check("check: a deleted criterion makes the record incomplete", dropped.returncode == 1 and "criteria differ from case W4" in dropped.stdout and "| PASS |" not in dropped.stdout, dropped.stdout)
+    record.write_text(original.replace("| expected route | DIAGNOSE |", "| expected route | GREENFIELD |"), encoding="utf-8")
+    rerouted = run("check", str(tampered))
+    check("check: an edited expected route is rejected and the canonical one judged", rerouted.returncode == 1 and "expected route differs" in rerouted.stdout and "(expected DIAGNOSE)" in rerouted.stdout, rerouted.stdout)
+    record.write_text(original.replace("| case | W4 |", "| case | Z9 |"), encoding="utf-8")
+    unknown = run("check", str(tampered))
+    check("check: a record for an unknown case is incomplete", unknown.returncode == 1 and "not in examples/scenarios.md" in unknown.stdout, unknown.stdout)
+    record.write_text(original, encoding="utf-8")
+
+    run("prepare", "W1", "--out", str(tmp / "unfilled"))
+    report = run("report", str(tmp))
+    check(
+        "report: aggregates every run into one matrix",
+        "| case | ? / prompt | test-agent 1.0 / prompt |" in report.stdout and "| R1 | - | FAIL |" in report.stdout and "record(s) incomplete" in report.stdout,
+        report.stdout,
+    )
+
+
+def main() -> int:
+    with tempfile.TemporaryDirectory() as raw_tmp:
+        tmp = Path(raw_tmp).resolve()
+        test_scenarios()
+        test_prepare(tmp / "prepare")
+        test_fixture_repositories(tmp / "repos")
+        test_builtin_fixtures(tmp / "builtin")
+        test_check(tmp / "check")
+
+    print()
+    if FAILURES:
+        for failure in FAILURES:
+            print(f"--- {failure}\n")
+        print(f"{len(FAILURES)} check(s) failed.")
+        return 1
+    print("All evaluation harness checks passed.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

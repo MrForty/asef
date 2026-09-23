@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.9
+
+English activation prompt, installation diagnosis, and a harness that evaluates any agent against the scenarios.
+
+### English activation prompt
+
+- `ASEF universal prompt.txt`: the activation prompt in English, line for line the Italian one, for users who do not write Italian. It points at the same files, carries a request block of the same shape and activates the same kernel; answers still follow the user's language.
+- Builder: `asef_prompt.py build --lang it|en` fills either prompt; `--release none` is accepted for both. `scan` lists the available languages. The skill picks `--lang` from the user's language.
+- Linter: every activation prompt is checked for version (header and bootstrap), routes, traits, labels, framework pointers and budget; a translation must match the original's pointers and request-block shape. Six new mutation tests. The runtime set carries both prompts.
+
+### `doctor`
+
+- `asef_prompt.py doctor [--json]` and `/asef doctor`: Python version, framework root, prompt/kernel alignment per language, runtime set completeness, maintainer files left in a cloned `asef/`, newer framework bundled with the skill, every installed `asef` skill across the known agent paths (differing copies warned), permanent activation block, `STATE.md`, git. Reports, never changes; exits 1 only on an error.
+- The agent path table moves into `asef_prompt.py`; `install.py` imports it, so installer and doctor never disagree.
+
+### Leaner runtime
+
+- Kernel deduplicated: `ASEF.md` loses its Context policy (the load order lives in `CONTEXT-MANAGER.md`, which Runtime step 4 now names) and the Artifact policy lines already owned by `ARTIFACTS.md`, `DECISION-ENGINE.md` and `CONTEXT-MANAGER.md`; "one task per context" keeps one home. About 110 tokens back under the 6,000 kernel ceiling.
+- `SKILL.md` keeps only the common path; `init`, `upgrade`, `doctor`, `status` and installation move to `references/commands.md`, read only when invoked. About 250 tokens less on every `/asef`. Linter: the reference exists, is pointed at, restates no single-home rule and stays under 800 tokens; four new mutation tests.
+- `ROUTER.md`, `CONTEXT-MANAGER.md` and `CLAUDE.md` speak of every activation method, not two: the skill is the third.
+
+### Scenario evaluation harness
+
+- `tools/asef_eval.py`: `list`, `prepare CASE --out DIR [--activation prompt|agents|skill] [--lang] [--fixture]`, `check DIR`, `report DIR...`. `prepare` builds a run folder with the fixture, the runtime framework, exactly one activation, a baseline git commit, the message to send and a criteria record. A fixture repository gets only the harness files committed, so its own dirty state stays the case's baseline; a linked worktree or submodule gets a repository of its own at its HEAD, so the agent's git commands never reach the source. `check` requires a verdict and evidence per criterion, judges only the criteria and route of the case in `examples/scenarios.md` (a deleted, reworded or re-routed record is incomplete) and reads the route from `STATE.md` instead of trusting the record; `report` prints a case × agent matrix and the result lines `examples/scenarios.md` defines. It drives no agent, so it works with all of them.
+- `examples/scenarios.md` splits fixture and request into separate columns so both are machine-readable.
+- Built-in fixtures for W4, A2 and E1 in `examples/fixtures/`, used when `--fixture` is omitted: `base/` becomes the first commit, `dirty/` stays uncommitted. Tests check each still reproduces its case (the broken menu selector, one known failing test and the validation defect, a passing uncommitted change with no remote).
+- `tools/test_asef_eval.py` covers the harness and runs in CI on Linux and Windows.
+
 ## 1.8
 
 The `/asef` skill, one behavior for every activation, less duplication, bounded memory.

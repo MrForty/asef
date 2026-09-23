@@ -84,6 +84,21 @@ def desync_prompt_version(work: Path) -> None:
     target.write_text(text.replace(f"kernel v{version}", "kernel v0.9"), "utf-8")
 
 
+def desync_english_bootstrap(work: Path) -> None:
+    """Move the English prompt's header but forget the version its bootstrap expects."""
+    version = current_version(work)
+    for name in ("ASEF.md", "prompt universale ASEF.txt"):
+        target = work / name
+        text = target.read_text(encoding="utf-8")
+        target.write_text(text.replace(f"version: {version}", "version: 7.7").replace(f"v{version}", "v7.7").replace(f"`{version}`", "`7.7`"), "utf-8")
+    target = work / "ASEF universal prompt.txt"
+    target.write_text(target.read_text(encoding="utf-8").replace(f"kernel v{version}", "kernel v7.7"), "utf-8")
+    changelog = work / "CHANGELOG.md"
+    changelog.write_text(changelog.read_text(encoding="utf-8").replace("# Changelog\n", "# Changelog\n\n## 7.7\n\nTest.\n", 1), "utf-8")
+    readme = work / "README.md"
+    readme.write_text(readme.read_text(encoding="utf-8").replace(f"ASEF-{version}-", "ASEF-7.7-", 1), "utf-8")
+
+
 def desync_readme_badge(work: Path) -> None:
     """Leave the README badge on an older version."""
     version = current_version(work)
@@ -231,6 +246,37 @@ CASES: list[tuple[str, Callable[[Path], None], str]] = [
         "RELEASE",
     ),
     (
+        "english prompt: missing",
+        drop_file("ASEF universal prompt.txt"),
+        "missing `ASEF universal prompt.txt`",
+    ),
+    (
+        "english prompt: never names a route",
+        mutate_all("ASEF universal prompt.txt", "RELEASE", "SHIP_IT"),
+        "never names route `RELEASE`",
+    ),
+    (
+        "english prompt: activates an older kernel",
+        lambda work: (work / "ASEF universal prompt.txt").write_text(
+            re.sub(r"kernel v[0-9.]+", "kernel v0.9", (work / "ASEF universal prompt.txt").read_text(encoding="utf-8"), count=1), "utf-8"),
+        "ASEF universal prompt.txt: activates kernel v0.9",
+    ),
+    (
+        "english prompt: bootstrap expects a stale version",
+        desync_english_bootstrap,
+        "bootstrap expects kernel",
+    ),
+    (
+        "english prompt: request block loses a field",
+        mutate("ASEF universal prompt.txt", "- how I know it works:\n", ""),
+        "request block differs in shape",
+    ),
+    (
+        "english prompt: points at a different file",
+        mutate("ASEF universal prompt.txt", "`asef/ARTIFACTS.md`", "`asef/ARTIFACTS-EN.md`"),
+        "points at different framework files",
+    ),
+    (
         "budget: module over its token ceiling",
         append_text("modules/qa.md", "\n" + ("Repeat the procedure once more. " * 300)),
         "budget",
@@ -338,6 +384,26 @@ CASES: list[tuple[str, Callable[[Path], None], str]] = [
         "skill: compatibility over the specification limit",
         mutate("skills/asef/SKILL.md", "compatibility: Any agent", "compatibility: " + "x" * 500 + " Any agent"),
         "compatibility exceeds 500",
+    ),
+    (
+        "skill reference: missing",
+        drop_file("skills/asef/references/commands.md"),
+        "missing `skills/asef/references/commands.md`",
+    ),
+    (
+        "skill reference: SKILL.md stops pointing at it",
+        mutate_all("skills/asef/SKILL.md", "`references/commands.md`", "the commands file"),
+        "never points at `skills/asef/references/commands.md`",
+    ),
+    (
+        "skill reference: restates the uncertainty ladder",
+        append_text("skills/asef/references/commands.md", "\nResolve gaps as known → inferable → ask.\n"),
+        "commands.md: restates the uncertainty ladder",
+    ),
+    (
+        "skill reference: over its token ceiling",
+        append_text("skills/asef/references/commands.md", "\n" + ("Report the result once more. " * 150)),
+        "skill reference budget",
     ),
     (
         "skill: over its token ceiling",
