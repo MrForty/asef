@@ -5,7 +5,7 @@ guidare agenti di coding nella creazione e modifica di web app, SaaS e siti web
 professionali.
 
 [![Consistency](https://github.com/MrForty/asef/actions/workflows/consistency.yml/badge.svg)](https://github.com/MrForty/asef/actions/workflows/consistency.yml)
-![Version](https://img.shields.io/badge/ASEF-1.8-ff7354)
+![Version](https://img.shields.io/badge/ASEF-1.9-ff7354)
 ![License](https://img.shields.io/badge/license-MIT-3da639)
 ![Dependencies](https://img.shields.io/badge/runtime_dependencies-0-174a8b)
 ![Mode](https://img.shields.io/badge/default-AUTO%20%2B%20ECONOMY-102752)
@@ -87,7 +87,10 @@ progetto/
 
 **Attivazione occasionale.** Apri
 [`prompt universale ASEF.txt`](prompt%20universale%20ASEF.txt), compila il
-blocco finale `## Richiesta` e incolla l'intero file nell'agente.
+blocco finale `## Richiesta` e incolla l'intero file nell'agente. Per chi non
+scrive in italiano c'è la traduzione inglese
+[`ASEF universal prompt.txt`](ASEF%20universal%20prompt.txt): stesso contratto,
+riga per riga, con il blocco `## Request`.
 
 **Attivazione permanente.** Copia il blocco di
 [`templates/AGENTS.template.md`](templates/AGENTS.template.md) nel file di
@@ -289,8 +292,15 @@ python3 asef/skills/asef/scripts/asef_prompt.py scan
 ```
 
 Stampa la cartella del framework, la versione del kernel, la versione dichiarata
-dal prompt e gli artefatti trovati. È il primo comando da usare quando qualcosa
-non torna.
+dal prompt, le lingue disponibili e gli artefatti trovati.
+
+Quando qualcosa non torna usa `/asef doctor` (o `asef_prompt.py doctor`, con
+`--json` per un output leggibile da script). Controlla versione di Python,
+framework, allineamento tra kernel e prompt in ogni lingua, completezza dei file
+di runtime, file dei manutentori rimasti in un `asef/` clonato, aggiornamenti
+disponibili, tutte le copie della skill installate nei percorsi noti (e se
+differiscono tra loro), blocco di attivazione permanente, `STATE.md` e git. Non
+modifica nulla; esce con codice 1 solo in presenza di un errore.
 
 Per aggiornare la skill, riesegui l'installatore con `--force`. Per aggiornare
 il framework di un progetto usa `/asef upgrade` (o
@@ -308,6 +318,7 @@ cancella la cartella `asef` dalla directory skill del tuo agent.
 | `/asef prompt <obiettivo>` | Stampa soltanto il prompt e si ferma |
 | `/asef init` | Installa il framework in `asef/` se manca |
 | `/asef upgrade` | Aggiorna il framework in `asef/` alla versione portata dalla skill |
+| `/asef doctor` | Diagnostica l'installazione senza modificare nulla |
 | `/asef status` | Riassume `STATE.md` senza modificare nulla |
 
 Non devi indicare se si tratta di creazione o di modifica: la route la sceglie
@@ -394,18 +405,19 @@ python3 asef/skills/asef/scripts/asef_prompt.py build --request "..." \
   [--who ...] [--today ...] [--asked ...] [--verify ...] \
   [--constraint ...]... [--non-goal ...]... \
   [--release commit|"pull request"|merge|deploy] \
-  [--artifact ...]... [--spec PATH] [--route NOME] [--block-only]
+  [--artifact ...]... [--spec PATH] [--route NOME] [--block-only] [--lang it|en]
 ```
 
-I comandi disponibili sono `build` per generare il prompt, `scan` per
+I comandi disponibili sono `build` per generare il prompt (`--lang en` usa il
+prompt inglese), `scan` per leggere versioni e artefatti, `doctor` per
 diagnosticare l'installazione e `init` per creare `asef/` in un progetto che non
-ce l'ha.
+ce l'ha (`init --upgrade` per aggiornarlo).
 
 ### Se qualcosa non funziona
 
 | Sintomo | Causa e rimedio |
 |---|---|
-| L'agent non riconosce `/asef` | Skill nella cartella sbagliata. Controlla con `--list` e reinstalla, oppure usa `--dest` |
+| L'agent non riconosce `/asef` | Skill nella cartella sbagliata. `asef_prompt.py doctor` elenca le copie trovate; reinstalla con `--agent` giusto, oppure usa `--dest` |
 | “no ASEF framework found” | Manca `asef/` nel progetto. Usa `/asef init`, oppure reinstalla la skill con `--bundle-framework` |
 | Avviso sulla versione del kernel | Prompt e kernel dichiarano versioni diverse. In conflitto vince il kernel; allinea la copia del framework |
 | L'agente fa domande che ritieni inutili | I campi di contesto sono vuoti e la risposta blocca lo scope. Fornisci il contesto nell'obiettivo |
@@ -731,6 +743,7 @@ con il solo blocco `Richiesta` compilato:
 python3 tools/asef_lint.py -v
 python3 tools/test_asef_lint.py
 python3 tools/test_asef_skill.py
+python3 tools/test_asef_eval.py
 python3 tools/release_notes.py --self-test
 ```
 
@@ -741,6 +754,29 @@ Il linter dimostra coerenza strutturale; non dimostra che ogni modello seguirà
 sempre il framework né certifica qualità estetica, sicurezza o accessibilità di
 un progetto concreto. Gli scenari in [`examples/scenarios.md`](examples/scenarios.md)
 servono a misurare questi aspetti con agenti e progetti reali.
+
+### Valutare un agent sugli scenari
+
+`tools/asef_eval.py` esegue la procedura degli scenari con qualsiasi agent. Non
+pilota nessun agent: prepara la cartella di prova, poi giudica il resoconto.
+
+```bash
+python3 tools/asef_eval.py list                                  # casi disponibili
+python3 tools/asef_eval.py prepare W4 --out runs/w4-codex \
+  --activation prompt --fixture fixtures/sito-menu-rotto         # oppure agents | skill
+# apri l'agent in runs/w4-codex/project e inviagli runs/w4-codex/MESSAGE.txt
+python3 tools/asef_eval.py check runs/w4-codex                   # valida il resoconto
+python3 tools/asef_eval.py report runs/                          # matrice caso × agent
+```
+
+`prepare` crea `project/` con la fixture, il solo framework di runtime in
+`asef/`, un'unica attivazione e un commit git di partenza; `MESSAGE.txt` con il
+testo da inviare; `RESULT.md` con un criterio per riga, preso dalle colonne
+“Expected behavior” e “Fail if”. Per ogni criterio indichi `PASS`, `FAIL` o
+`OPEN` e l'evidenza osservata (file, comando, screenshot). `check` rifiuta
+verdetti senza evidenza e legge la route da `project/STATE.md`, così la route
+non è mai autodichiarata; `report` produce la matrice e le righe nel formato di
+risultato definito dagli scenari.
 
 ## Versioni e release
 

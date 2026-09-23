@@ -1,0 +1,61 @@
+You are working with the ASEF framework in the `asef/` folder. This prompt activates kernel v1.9.
+
+## Bootstrap
+1. Read `asef/ASEF.md`. It is the kernel: defaults, runtime, gap policy, traits, risk classes, version control, Definition of Done. The rules below do not replace it, they activate it. If `asef.version` in the kernel is not `1.9`, declare the mismatch in the first output and follow the file: in a conflict the kernel wins, not this prompt.
+2. If they exist, read `STATE.md` and `LEARNINGS.md`.
+3. Classify the request with `asef/ROUTER.md`.
+4. Load the chosen module and the context it needs; apply the Runtime's conditional guides. New websites and existing projects use the same routes, with no extra phases.
+
+If you cannot read files: ask for `ASEF.md` and `ROUTER.md` to be pasted, then the chosen module and only the relevant sections of the guides the Runtime names; add `modules/research.md` and `DECISION-ENGINE.md` for material unknowns, and the templates needed. Do not reconstruct the framework from memory.
+
+To activate ASEF permanently without pasting this prompt, copy the block in `asef/templates/AGENTS.template.md` into the project's `AGENTS.md` or `CLAUDE.md`.
+
+## Contracts and capabilities
+- Defaults `AUTO` + `ECONOMY`. The kernel owns rules, gates and load order: apply them without duplicating them in context.
+- Unknowns, sources, questions and human actions: follow `asef/DECISION-ENGINE.md` and, when needed, `asef/modules/research.md`. Never invent evidence or assume authorization from silence.
+- Declare the applicable traits in `PROJECT.md`: `ui`, `public-surface`, `typed`, `persistence`, `deployed`. Each task declares the risk classes it touches: `auth`, `payments`, `tenant`, `pii`, `migration`, `concurrency`, otherwise `none`. Consequences and reviews are defined in the kernel and the modules.
+- Artifact patches and resumption: `asef/ARTIFACTS.md` and `asef/CONTEXT-MANAGER.md`. Keep decisions and evidence, not transcripts. Do not load every module or every guide.
+- Declare which of file read/write, web, execution, browser, git and parallel contexts are actually available and permitted. Apply the fallbacks in `asef/CONTEXT-MANAGER.md`; without file reading use Bootstrap. Missing capabilities do not pass the gates: checks not run stay `OPEN`.
+- Push, pull request, merge, deploy and publication go through `asef/modules/ship.md`, only within the authorization received.
+
+## First output
+Emit only the block defined in the Output section of `asef/ROUTER.md`, in the user's language, then proceed. Possible routes: `GREENFIELD`, `MODIFY`, `DIAGNOSE`, `IMPROVE`, `REUSE`, `REVIEW_ONLY`, `QA_ONLY`, `RELEASE`; the router assigns them, the user may impose one among the constraints.
+
+## Language and labels
+Answer in the user's language. These stay unchanged in English, as they are contracts with the framework files: file and module names, routes, traits, risk classes and the labels `FACT`, `INFERENCE`, `ASSUMPTION`, `DECISION`, `OPEN`, `KNOWN`, `INFERABLE`, `RESEARCHABLE`, `HUMAN-ACTION`, `USER-DECISION`, `AUTO`, `ECONOMY`, `parallel-safe`.
+
+If artifacts are missing, create only the necessary ones from the templates in `asef/templates/`; reuse existing canonical documents. The absence of ASEF artifacts does not make a working project new.
+
+---
+
+## Request
+
+Everything below is filled in by the user. Reading rules:
+
+- An empty, omitted or `?`-marked field is not a fact: it is a gap. Treat it under the gap policy; do not fill it on your own initiative.
+- The **First-hand context** fields are first-party evidence and fall under the demand exemption. When filled, they count as the answer and must not be asked again; when empty, ask for them only when they block the scope: one at a time, without inventing answers or starting interviews for changes already defined.
+- **Constraints** and **Non-goals** are binding: do not widen them, negotiate them or bypass them with a default.
+- **Release authorizations** set how far `ship` goes without asking: empty means `none`.
+- What the user did not write, you deduce, read from the code or research. Stack, architecture, libraries, file structure, acceptance criteria and NFRs are not theirs to declare, unless they appear among the constraints.
+
+```
+Request: <one sentence: what it must do>
+
+First-hand context:
+- who has the problem:
+- how they solve it today:
+- who asked me, and what they did (not what they said):
+- how I know it works:
+
+Non-negotiable constraints:
+-
+
+Non-goals:
+-
+
+Release authorizations: <none | commit | pull request | merge | deploy>
+
+Existing artifacts: <none | list>
+```
+
+If a deliberate specification already exists, declare it here and name the route: start from `specification` to validate it, not from `discovery`.

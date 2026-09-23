@@ -6,7 +6,7 @@ compatibility: Any agent that reads Agent Skills. Python 3.11+ runs the helper s
 metadata:
   framework: ASEF
   homepage: https://github.com/MrForty/asef
-  argument-hint: "<goal> | prompt <goal> | init | upgrade | status"
+  argument-hint: "<goal> | prompt <goal> | init | upgrade | doctor | status"
 ---
 
 # ASEF skill
@@ -42,6 +42,7 @@ Without command execution, do the same by hand: find `asef/ASEF.md`, then copy `
 | `prompt <goal>` | Build the prompt and print it verbatim inside a four-backtick fence (it contains three-backtick blocks); stop. For agents without skills, or for review before running |
 | `init` | Install the framework into `asef/` if missing; report version; stop |
 | `upgrade` | `python3 SCRIPT init --upgrade`: refresh the framework files in `asef/` from the skill's newer copy; project artifacts are untouched; report old → new version; stop |
+| `doctor` | `python3 SCRIPT doctor`: report framework, prompt versions, runtime set, installed skill copies and activation; relay warnings and fixes; change nothing |
 | `status` | Read `STATE.md` (and `LEARNINGS.md` if present); report route, verified state, next action, open gaps, human actions; change nothing |
 
 ## 3. Build the prompt
@@ -53,10 +54,11 @@ Map the user's words onto the request block. The block's reading rules (empty fi
 - `--constraint` / `--non-goal` (repeatable): only explicit limits ("keep the stack", "no redesign", "must stay in Italian").
 - `--release`: `commit` / `"pull request"` / `merge` / `deploy` only when the user said so ("and commit", "open a PR", "deploy it"). Otherwise omit: it defaults to `nessuna`. The skill never grants authorization.
 - `--artifact` (repeatable): files or folders the user named; canonical ASEF artifacts are detected automatically.
+- `--lang`: `it` when the user writes Italian, otherwise `en`. Both prompts are the same contract; the agent still answers in the user's language.
 - `--spec PATH` when the user points at an existing deliberate specification; `--route NAME` only when they impose one.
 
 ```
-python3 SCRIPT build --request "..." [--who ...] [--constraint ...]... [--release ...] [--artifact ...]...
+python3 SCRIPT build --lang it|en --request "..." [--who ...] [--constraint ...]... [--release ...] [--artifact ...]...
 ```
 
 Do not pre-classify new vs existing project, stack, or route: `ROUTER.md` does that from the evidence, including the artifact list the script filled. Do not ask the user anything before building; the framework batches its own questions.

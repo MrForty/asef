@@ -25,15 +25,15 @@ BUILDER = SKILL / "scripts" / "asef_prompt.py"
 INSTALLER = SKILL / "scripts" / "install.py"
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(BUILDER.parent))
-from asef_prompt import ARTIFACT_FILES, RUNTIME_DIRS, RUNTIME_FILES  # noqa: E402 - the set under test
+from asef_prompt import ARTIFACT_FILES, PROMPT_FILES, RUNTIME_DIRS, RUNTIME_FILES  # noqa: E402 - the set under test
 PROMPT = (ROOT / "prompt universale ASEF.txt").read_text(encoding="utf-8")
 PROMPT_HEAD = PROMPT[: PROMPT.index("```\nRichiesta:")]
 
 FAILURES: list[str] = []
 
 
-def run(script: Path, *args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
-    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+def run(script: Path, *args: str, cwd: Path | None = None, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8", **(env or {})}
     return subprocess.run(
         [sys.executable, str(script), *args],
         capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=cwd, env=env,
@@ -54,8 +54,8 @@ def fresh_project(tmp: Path, name: str, with_framework: bool = True) -> Path:
     return project
 
 
-def request_block(prompt: str) -> str:
-    match = re.search(r"```\n(Richiesta:.*?)```", prompt, re.S)
+def request_block(prompt: str, opener: str = "Richiesta:") -> str:
+    match = re.search(rf"```\n({re.escape(opener)}.*?)```", prompt, re.S)
     return match.group(1) if match else ""
 
 
@@ -110,8 +110,23 @@ def test_builder(tmp: Path) -> None:
     bad = run(BUILDER, "--project", str(project), "build", "--request", "x", "--release", "publish")
     check("builder: rejects an unknown release level", bad.returncode == 2 and "invalid choice" in bad.stderr)
 
+    english = run(
+        BUILDER, "--project", str(project), "build", "--lang", "en",
+        "--request", "Add a filter to the invoices list", "--verify", "the list narrows",
+        "--constraint", "keep the stack", "--release", "none", "--spec", "docs/spec.md",
+    )
+    english_prompt = (ROOT / "ASEF universal prompt.txt").read_text(encoding="utf-8")
+    block = request_block(english.stdout, "Request:")
+    check("builder --lang en: everything before the block is the English prompt verbatim", english.returncode == 0 and english.stdout.startswith(english_prompt[: english_prompt.index("```\nRequest:")]), english.stderr)
+    check("builder --lang en: request and stated context filled", "Request: Add a filter to the invoices list\n" in block and "- how I know it works: the list narrows\n" in block)
+    check("builder --lang en: constraints, release and artifacts in English", "Non-negotiable constraints:\n- keep the stack\n" in block and "Release authorizations: none\n" in block and "Existing artifacts: " in block)
+    check("builder --lang en: English trailer", "A deliberate specification already exists: `docs/spec.md`" in english.stdout)
+    italian_none = run(BUILDER, "--project", str(project), "build", "--request", "x", "--release", "none", "--block-only")
+    check("builder: `none` maps to `nessuna` in the Italian block", "Autorizzazioni di rilascio: nessuna\n" in italian_none.stdout)
+
     scan = run(BUILDER, "--project", str(project), "scan")
     info = json.loads(scan.stdout or "{}")
+    check("scan: lists the prompt languages", info.get("languages") == ["it", "en"], scan.stdout)
     check("scan: reports root, versions and artifacts", info.get("root") == "asef" and info.get("kernel_version") == info.get("prompt_version") and "STATE.md" in info.get("artifacts", []) and info.get("state") is True, scan.stdout)
 
 
@@ -153,7 +168,7 @@ def dangling_references(copy: Path) -> list[str]:
     """
     missing: set[str] = set()
     docs = [d for d in copy.rglob("*.md") if d.name != "CHANGELOG.md"]  # history, never loaded
-    for doc in docs + [copy / "prompt universale ASEF.txt"]:
+    for doc in docs + [copy / name for name in PROMPT_FILES.values()]:
         for ref in re.findall(r"`([^`\s]+\.(?:md|txt|py))`", doc.read_text(encoding="utf-8")):
             ref = ref.removeprefix("asef/")
             if ref in ARTIFACT_FILES or not (ROOT / ref).is_file():
@@ -268,6 +283,40 @@ def test_installer_link(tmp: Path) -> None:
     )
 
 
+def test_doctor(tmp: Path) -> None:
+    """`doctor` reports, never changes, and fails only on a real error."""
+    home = tmp / "doctor-home"
+    home.mkdir()
+    env = {"HOME": str(home), "USERPROFILE": str(home)}
+
+    healthy = fresh_project(tmp, "doctor-healthy", with_framework=False)
+    run(BUILDER, "--project", str(healthy), "init")
+    run(INSTALLER, "--agent", "claude", "--project", str(healthy))
+    (healthy / "AGENTS.md").write_text("## ASEF\n\nRead `asef/ASEF.md`.\n", encoding="utf-8")
+    before = sorted(p.relative_to(healthy).as_posix() for p in healthy.rglob("*"))
+    result = run(BUILDER, "--project", str(healthy), "doctor", "--json", env=env)
+    report = json.loads(result.stdout or "{}")
+    levels = {(r["check"], r["level"]) for r in report.get("results", [])}
+    check("doctor: a healthy project passes", result.returncode == 0 and report.get("ok") is True, result.stdout + result.stderr)
+    check("doctor: sees the skill and the permanent block", ("skill", "ok") in levels and ("activation", "ok") in levels, result.stdout)
+    check("doctor: changes nothing", sorted(p.relative_to(healthy).as_posix() for p in healthy.rglob("*")) == before)
+
+    user_skill = home / ".agents" / "skills" / "asef"
+    shutil.copytree(SKILL, user_skill, ignore=shutil.ignore_patterns("__pycache__"))
+    (user_skill / "SKILL.md").write_text((user_skill / "SKILL.md").read_text(encoding="utf-8") + "\nstale\n", encoding="utf-8")
+    differing = run(BUILDER, "--project", str(healthy), "doctor", env=env)
+    check("doctor: warns when installed skill copies differ", differing.returncode == 0 and "installed copies differ" in differing.stdout, differing.stdout)
+
+    cloned = fresh_project(tmp, "doctor-clone")
+    (cloned / "asef" / "CLAUDE.md").write_text("# maintainers\n", encoding="utf-8")
+    prompt = cloned / "asef" / "ASEF universal prompt.txt"
+    prompt.write_text(re.sub(r"kernel v[0-9.]+", "kernel v0.9", prompt.read_text(encoding="utf-8"), count=1), encoding="utf-8")
+    shutil.rmtree(cloned / "asef" / "guides")
+    broken = run(BUILDER, "--project", str(cloned), "doctor", env=env)
+    check("doctor: flags maintainer files in asef/", "maintainer files" in broken.stdout and "CLAUDE.md" in broken.stdout, broken.stdout)
+    check("doctor: fails on a prompt/kernel mismatch and a missing runtime folder", broken.returncode == 1 and "activates v0.9" in broken.stdout and "missing guides/" in broken.stdout, broken.stdout)
+
+
 def test_skill_file() -> None:
     text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
     front = re.match(r"---\n(.*?)\n---\n", text, re.S)
@@ -289,6 +338,7 @@ def main() -> int:
         test_builder(tmp)
         test_builder_roots(tmp)
         test_upgrade(tmp)
+        test_doctor(tmp)
         test_installer(tmp)
         test_installer_link(tmp)
 

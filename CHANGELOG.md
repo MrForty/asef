@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.9
+
+English activation prompt, installation diagnosis, and a harness that evaluates any agent against the scenarios.
+
+### English activation prompt
+
+- `ASEF universal prompt.txt`: the activation prompt in English, line for line the Italian one, for users who do not write Italian. It points at the same files, carries a request block of the same shape and activates the same kernel; answers still follow the user's language.
+- Builder: `asef_prompt.py build --lang it|en` fills either prompt; `--release none` is accepted for both. `scan` lists the available languages. The skill picks `--lang` from the user's language.
+- Linter: every activation prompt is checked for version (header and bootstrap), routes, traits, labels, framework pointers and budget; a translation must match the original's pointers and request-block shape. Six new mutation tests. The runtime set carries both prompts.
+
+### `doctor`
+
+- `asef_prompt.py doctor [--json]` and `/asef doctor`: Python version, framework root, prompt/kernel alignment per language, runtime set completeness, maintainer files left in a cloned `asef/`, newer framework bundled with the skill, every installed `asef` skill across the known agent paths (differing copies warned), permanent activation block, `STATE.md`, git. Reports, never changes; exits 1 only on an error.
+- The agent path table moves into `asef_prompt.py`; `install.py` imports it, so installer and doctor never disagree.
+
+### Scenario evaluation harness
+
+- `tools/asef_eval.py`: `list`, `prepare CASE --out DIR [--activation prompt|agents|skill] [--lang] [--fixture]`, `check DIR`, `report DIR...`. `prepare` builds a run folder with the fixture, the runtime framework, exactly one activation, a baseline git commit, the message to send and a criteria record; `check` requires a verdict and evidence per criterion and reads the route from `STATE.md` instead of trusting the record; `report` prints a case × agent matrix and the result lines `examples/scenarios.md` defines. It drives no agent, so it works with all of them.
+- `examples/scenarios.md` splits fixture and request into separate columns so both are machine-readable.
+- `tools/test_asef_eval.py` covers the harness and runs in CI on Linux and Windows.
+
 ## 1.8
 
 The `/asef` skill, one behavior for every activation, less duplication, bounded memory.

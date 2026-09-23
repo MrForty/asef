@@ -5,4 +5,4 @@
 
 ## ASEF
 
-This project runs under ASEF, in `asef/`. Before any work read `asef/ASEF.md` and follow its Runtime, resuming from `STATE.md` when present. Answer in the user's language; file, module, route and label names stay in English. A new task arrives as the request block of `asef/prompt universale ASEF.txt`; without it, treat the message itself as the request.
+This project runs under ASEF, in `asef/`. Before any work read `asef/ASEF.md` and follow its Runtime, resuming from `STATE.md` when present. Answer in the user's language; file, module, route and label names stay in English. A new task arrives as the request block of `asef/prompt universale ASEF.txt` or its English twin `asef/ASEF universal prompt.txt`; without it, treat the message itself as the request.
