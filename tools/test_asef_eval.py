@@ -70,7 +70,9 @@ def test_prepare(tmp: Path) -> None:
     check("prepare: the framework copy is the runtime set only", not (project / "asef" / "CLAUDE.md").exists() and not (project / "asef" / "tools").exists())
     message = (prompt_run / "MESSAGE.txt").read_text(encoding="utf-8")
     check("prepare: prompt activation sends the filled prompt", "## Bootstrap" in message and "Richiesta: Fix the mobile menu." in message)
-    check("prepare: warns when no fixture is given", "no --fixture" in result.stderr)
+    check("prepare: a case with a built-in fixture uses it", "built-in fixture examples/fixtures/W4" in (prompt_run / "RESULT.md").read_text(encoding="utf-8") and (project / "js" / "menu.js").is_file())
+    bare = run("prepare", "W1", "--out", str(tmp / "w1-bare"))
+    check("prepare: warns when no fixture exists for the case", bare.returncode == 0 and "no --fixture" in bare.stderr, bare.stderr)
     record = (prompt_run / "RESULT.md").read_text(encoding="utf-8")
     check("prepare: record lists the criteria of the case", "| F1 | fail-if | GREENFIELD solely because STATE/SPEC is absent | ? |  |" in record and "| expected route | DIAGNOSE |" in record)
 
@@ -145,6 +147,37 @@ def test_fixture_repositories(tmp: Path) -> None:
     check("worktree fixture: commits in the run never reach the source", git(source, "rev-parse", "HEAD").strip() == source_head and " M form.js" in git(worktree, "status", "--porcelain"))
 
 
+def test_builtin_fixtures(tmp: Path) -> None:
+    """Each built-in fixture reproduces the state its case describes."""
+    scenarios = asef_eval.load_scenarios()
+    shipped = sorted(p.name for p in asef_eval.FIXTURES.iterdir() if p.is_dir())
+    check("fixtures: every built-in fixture belongs to a case and has a base", all(n in scenarios and (asef_eval.FIXTURES / n / "base").is_dir() for n in shipped), ", ".join(shipped))
+
+    def prepared(case: str) -> Path:
+        result = run("prepare", case, "--out", str(tmp / case))
+        check(f"fixtures: {case} prepares", result.returncode == 0, result.stderr)
+        return tmp / case / "project"
+
+    def unittest_run(project: Path) -> subprocess.CompletedProcess[str]:
+        return subprocess.run([sys.executable, "-m", "unittest"], cwd=project, capture_output=True, text=True)
+
+    w4 = prepared("W4")
+    check("fixtures: W4 starts clean with the broken menu selector", git(w4, "status", "--porcelain") == "" and ".nav-toggle" in (w4 / "js" / "menu.js").read_text(encoding="utf-8") and 'class="nav-button"' in (w4 / "index.html").read_text(encoding="utf-8"))
+
+    a2 = prepared("A2")
+    status = git(a2, "status", "--porcelain")
+    tests = unittest_run(a2)
+    check("fixtures: A2 carries unrelated uncommitted edits", " M app/config.py" in status and "?? notes/" in status and "asef" not in status, status)
+    check("fixtures: A2 has exactly one known failing test", tests.returncode != 0 and "FAILED (failures=1)" in tests.stderr and "test_cents_add_up" in tests.stderr, tests.stderr)
+    defect = subprocess.run([sys.executable, "-c", "from app.forms import validate_signup; print(validate_signup('anna@', 'correct-horse'))"], cwd=a2, capture_output=True, text=True)
+    check("fixtures: A2 reproduces the validation defect", defect.stdout.strip() == "[]", defect.stdout + defect.stderr)
+
+    e1 = prepared("E1")
+    tests = unittest_run(e1)
+    check("fixtures: E1 holds a completed, passing, uncommitted change", " M slug.py" in git(e1, "status", "--porcelain") and tests.returncode == 0, tests.stderr)
+    check("fixtures: E1 has no remote to publish to", git(e1, "remote").strip() == "")
+
+
 def test_check(tmp: Path) -> None:
     run_dir = tmp / "judged"
     run("prepare", "W4", "--out", str(run_dir))
@@ -212,6 +245,7 @@ def main() -> int:
         test_scenarios()
         test_prepare(tmp / "prepare")
         test_fixture_repositories(tmp / "repos")
+        test_builtin_fixtures(tmp / "builtin")
         test_check(tmp / "check")
 
     print()

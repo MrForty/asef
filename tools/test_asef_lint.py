@@ -386,6 +386,26 @@ CASES: list[tuple[str, Callable[[Path], None], str]] = [
         "compatibility exceeds 500",
     ),
     (
+        "skill reference: missing",
+        drop_file("skills/asef/references/commands.md"),
+        "missing `skills/asef/references/commands.md`",
+    ),
+    (
+        "skill reference: SKILL.md stops pointing at it",
+        mutate_all("skills/asef/SKILL.md", "`references/commands.md`", "the commands file"),
+        "never points at `skills/asef/references/commands.md`",
+    ),
+    (
+        "skill reference: restates the uncertainty ladder",
+        append_text("skills/asef/references/commands.md", "\nResolve gaps as known → inferable → ask.\n"),
+        "commands.md: restates the uncertainty ladder",
+    ),
+    (
+        "skill reference: over its token ceiling",
+        append_text("skills/asef/references/commands.md", "\n" + ("Report the result once more. " * 150)),
+        "skill reference budget",
+    ),
+    (
         "skill: over its token ceiling",
         append_text("skills/asef/SKILL.md", "\n" + ("Read the kernel once more. " * 250)),
         "skill budget",

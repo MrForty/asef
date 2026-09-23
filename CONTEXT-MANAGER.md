@@ -39,7 +39,6 @@ In `ECONOMY` mode:
 
 - retrieve before summarizing;
 - quote identifiers and facts, not long passages;
-- prefer one current vertical task per context;
 - use links or paths to canonical sources rather than duplicating them;
 - expand context only for a named uncertainty;
 - keep kernel and module text stable across sessions so provider prompt caching can amortize them.
@@ -59,7 +58,7 @@ Blockers:
 
 ## Parallel contexts
 
-Use only capabilities available and permitted by the host. Without delegation, resolve gaps and review axes sequentially, compressing each result. Without web evidence, use only a safe reversible assumption; otherwise leave `OPEN`. Without execution or browser access, required checks stay `OPEN`. Without file writes, return artifacts for saving. Missing capabilities never waive gates. This applies to both activation methods.
+Use only capabilities available and permitted by the host. Without delegation, resolve gaps and review axes sequentially, compressing each result. Without web evidence, use only a safe reversible assumption; otherwise leave `OPEN`. Without execution or browser access, required checks stay `OPEN`. Without file writes, return artifacts for saving. Missing capabilities never waive gates. This applies to every activation method.
 
 One task per context. A parallel context receives its task file and the handoff packet, isolates its changes under the version-control rules in `ASEF.md`, and returns only an evidence packet. The orchestrating context integrates results and is the single writer of `STATE.md`.
 
@@ -77,4 +76,4 @@ Discard intermediate reasoning, duplicated source text, failed attempts without 
 
 ## Output
 
-Update `STATE.md` to point to canonical artifacts and the next action. `STATE.md` must remain reconstructive, compact and current.
+Update `STATE.md` to point to canonical artifacts and the next action. `STATE.md` must remain reconstructive, compact and current: a pointer, never a second specification or plan.

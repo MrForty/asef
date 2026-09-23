@@ -6,7 +6,7 @@ These are acceptance scenarios for the framework, not executed agent results. Th
 
 For each case, start a fresh context with ASEF via the universal prompt, then separately via the AGENTS activation block. Supply the same task and fixture. Record agent/version, framework commit, available tools, actual route, changed files, artifact/evidence paths and PASS/FAIL/OPEN against each expected outcome. Retain outputs, not hidden reasoning. A static linter pass is not a scenario pass.
 
-`tools/asef_eval.py` runs this procedure for any agent: `prepare` builds a run folder (runtime framework, fixture, activation, criteria checklist), you run the agent in it, `check` validates the filled record and reads the route from `STATE.md`, `report` aggregates runs into a case × agent matrix.
+`tools/asef_eval.py` runs this procedure for any agent: `prepare` builds a run folder (runtime framework, fixture, activation, criteria checklist), you run the agent in it, `check` validates the filled record and reads the route from `STATE.md`, `report` aggregates runs into a case × agent matrix. W4, A2 and E1 ship a built-in fixture in `examples/fixtures/<CASE>/` (`base/` committed, `dirty/` left uncommitted), used when `--fixture` is omitted; the other cases need one supplied.
 
 Judge only observable actions and deliverables. For visual cases inspect the rendered result against the declared design direction; text mentioning a rule is insufficient. Repeat across target agents before claiming portability. Compare context loaded and token usage only when the host exposes them; otherwise report unavailable.
 

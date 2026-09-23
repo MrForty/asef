@@ -42,6 +42,9 @@ ACTIVATION_PROMPTS = {
 # activation prompt at runtime and must point at the kernel, never restate it.
 SKILL_FILE = "skills/asef/SKILL.md"
 SKILL_SCRIPTS = ["skills/asef/scripts/asef_prompt.py", "skills/asef/scripts/install.py"]
+# Loaded on demand, only for occasional commands: kept out of SKILL.md so every
+# invocation pays for the common path alone.
+SKILL_REFERENCES = ["skills/asef/references/commands.md"]
 SKILL_POINTERS = [ACTIVATION_PROMPT, "asef/ASEF.md", "ROUTER.md", "CONTEXT-MANAGER.md", "scripts/asef_prompt.py"]
 # Agent Skills specification (agentskills.io/specification): the only top-level
 # frontmatter fields every agent accepts, and their limits. Agent-specific keys
@@ -156,7 +159,7 @@ TEMPLATE_SECTIONS = {
 
 # Approximate token ceilings (characters / 4). Compression is the point: a
 # change that trips one is a signal to cut, not to raise the ceiling.
-BUDGETS = {"kernel": 6000, "module": 1200, "prompt": 2400, "guide": 1200, "skill": 1500}
+BUDGETS = {"kernel": 6000, "module": 1200, "prompt": 2400, "guide": 1200, "skill": 1500, "skill reference": 800}
 
 # Template rows CLAUDE.md declares mandatory: filled or marked N/A, never deleted.
 SPEC_NFR_ROWS = [
@@ -283,7 +286,7 @@ def estimated_tokens(text: str) -> int:
 def check_structure(root: Path, report: Report) -> dict[str, str]:
     """Expected files exist. Returns {module name: text} for later checks."""
     required = KERNEL_FILES + [*ACTIVATION_PROMPTS, "CHANGELOG.md", "README.md", *GUIDE_CONSUMERS]
-    for name in required + [SKILL_FILE, *SKILL_SCRIPTS]:
+    for name in required + [SKILL_FILE, *SKILL_SCRIPTS, *SKILL_REFERENCES]:
         if not (root / name).is_file():
             report.fail("structure", f"missing `{name}`")
 
@@ -895,6 +898,15 @@ def check_skill(root: Path, report: Report) -> None:
     tokens = estimated_tokens(text)
     if tokens > BUDGETS["skill"]:
         report.fail(SKILL_FILE, f"~{tokens} tokens exceeds the skill budget")
+    for reference in SKILL_REFERENCES:
+        if f"`{Path(reference).relative_to(Path(SKILL_FILE).parent).as_posix()}`" not in text:
+            report.fail(SKILL_FILE, f"never points at `{reference}`, so the agent cannot load it")
+        ref_text = read(root / reference)
+        for rule, (phrase, owners) in SINGLE_HOME_RULES.items():
+            if phrase in ref_text:
+                report.fail(reference, f"restates the {rule} owned by {', '.join(sorted(owners))}")
+        if estimated_tokens(ref_text) > BUDGETS["skill reference"]:
+            report.fail(reference, f"~{estimated_tokens(ref_text)} tokens exceeds the skill reference budget")
     report.ok(f"skill follows the Agent Skills spec and points at the kernel (~{tokens} tokens)")
 
 

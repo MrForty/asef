@@ -28,7 +28,7 @@ Modular operating framework for applications, SaaS and professional websites, ne
 1. Read this kernel.
 2. If present, read `STATE.md` and `LEARNINGS.md`; open `RESEARCH.md` only for a revisit trigger `STATE.md` marks due. Otherwise inspect the request and available project artifacts.
 3. Classify intent with `ROUTER.md`.
-4. Load only the selected module and its required context. Apply `guides/existing-projects.md` to the affected flow of an existing project and `guides/web-experience.md` to UI work: each only when its condition holds, and only the relevant sections.
+4. Load only the selected module and its required context, in the order `CONTEXT-MANAGER.md` sets. Apply `guides/existing-projects.md` to the affected flow of an existing project and `guides/web-experience.md` to UI work: each only when its condition holds, and only the relevant sections.
 5. Classify material unknowns with the gap policy; resolve them through `modules/research.md` and `DECISION-ENGINE.md`.
 6. Execute until the module exit criteria pass.
 7. Update authoritative artifacts under `ARTIFACTS.md`.
@@ -104,12 +104,6 @@ Traits describe the project; risk classes describe one change. Each task declare
 
 A declared class makes the trust-boundary row in `PLAN.md` mandatory, adds the threat pass in `modules/review.md` and raises QA depth to `Deep` in `modules/qa.md`.
 
-## Context policy
-
-Open `CONTEXT-MANAGER.md` when selecting inputs or handing work to a fresh context. Default load order:
-
-`STATE → current TASK → relevant artifact sections → relevant code/tests → targeted adjacent context`
-
 ## Module contract
 
 Every module declares:
@@ -123,10 +117,6 @@ Every module declares:
 
 ## Artifact policy
 
-- Separate confirmed facts, assumptions, decisions and open questions.
-- Record only decisions that affect future work.
-- `STATE.md` is a compact pointer, not a second specification or plan.
-- Keep one current task per execution context when practical.
 - At route completion record in `STATE.md` question rounds, escalations and review/QA cycles. Two or more escalations, or a repeated question round, on one route produce a `LEARNINGS.md` entry naming the cause.
 - `LEARNINGS.md` holds only what saves a fresh agent a wrong turn: pitfalls, project quirks, command fixes. Never a restatement of another artifact.
 

@@ -778,6 +778,12 @@ verdetti senza evidenza e legge la route da `project/STATE.md`, così la route
 non è mai autodichiarata; `report` produce la matrice e le righe nel formato di
 risultato definito dagli scenari.
 
+I casi W4 (menu mobile rotto), A2 (app con modifiche non committate e un test
+che fallisce già) ed E1 (modifica locale completata, nessuna autorizzazione di
+rilascio) hanno una fixture pronta in `examples/fixtures/`: senza `--fixture`,
+`prepare` la usa da sola, quindi il primo test su un agent reale parte con un
+solo comando.
+
 ## Versioni e release
 
 La versione vive in un posto solo: `asef.version` nel kernel. Cambiarla

@@ -226,7 +226,7 @@ def test_installer(tmp: Path) -> None:
 
     result = run(INSTALLER, "--agent", "claude", "--project", str(project))
     target = project / ".claude" / "skills" / "asef"
-    check("installer: copies to the agent's project path", result.returncode == 0 and (target / "SKILL.md").is_file() and (target / "scripts" / "asef_prompt.py").is_file(), result.stderr)
+    check("installer: copies to the agent's project path", result.returncode == 0 and (target / "SKILL.md").is_file() and (target / "scripts" / "asef_prompt.py").is_file() and (target / "references" / "commands.md").is_file(), result.stderr)
 
     repeat = run(INSTALLER, "--agent", "claude", "--project", str(project))
     check("installer: refuses to overwrite without --force", repeat.returncode != 0 and "--force" in repeat.stderr)

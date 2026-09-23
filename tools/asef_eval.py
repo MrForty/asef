@@ -12,6 +12,11 @@ what the agent observably did.
     python3 tools/asef_eval.py check runs/w4-claude
     python3 tools/asef_eval.py report runs/
 
+Without `--fixture`, a case with a built-in fixture in `examples/fixtures/<CASE>/`
+uses it: `base/` becomes the fixture's first commit and `dirty/`, when present,
+is copied over it uncommitted, so cases such as A2 start with the unrelated
+changes they describe.
+
 A run folder holds `project/` (the agent's working directory: the fixture, the
 runtime framework in `asef/`, the activation), `MESSAGE.txt` (what to send the
 agent) and `RESULT.md` (the record to fill). `check` reads the route from
@@ -33,6 +38,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCENARIOS = ROOT / "examples" / "scenarios.md"
+FIXTURES = ROOT / "examples" / "fixtures"
 SCRIPTS = ROOT / "skills" / "asef" / "scripts"
 BUILDER = SCRIPTS / "asef_prompt.py"
 INSTALLER = SCRIPTS / "install.py"
@@ -174,6 +180,22 @@ def git_baseline(project: Path, harness: list[str]) -> str:
     return "harness committed on the fixture repository; its own changes left as they were"
 
 
+def builtin_fixture(case: str, project: Path) -> str | None:
+    """Materialise `examples/fixtures/<case>`: `base/` committed, `dirty/` left uncommitted."""
+    source = FIXTURES / case
+    if not (source / "base").is_dir():
+        return None
+    ignore = shutil.ignore_patterns("__pycache__")
+    shutil.copytree(source / "base", project, ignore=ignore)
+    if shutil.which("git") is not None:
+        git(project, "init", "-q")
+        git(project, "add", "-A")
+        git(project, "commit", "-q", "-m", "fixture baseline")
+    if (source / "dirty").is_dir():
+        shutil.copytree(source / "dirty", project, ignore=ignore, dirs_exist_ok=True)
+    return f"built-in fixture examples/fixtures/{case}"
+
+
 def result_template(s: Scenario, activation: str, lang: str, baseline: str) -> str:
     rows = [
         ("case", s.case), ("activation", activation), ("language", lang),
@@ -214,12 +236,12 @@ def cmd_prepare(s: Scenario, args: argparse.Namespace) -> int:
         print(f"asef_eval: {out} is not empty", file=sys.stderr)
         return 2
     project = out / "project"
-    isolated = None
+    fixture_note = None
     harness = ["asef"]
     if args.fixture:
         shutil.copytree(args.fixture, project, ignore=shutil.ignore_patterns("asef"))
-        isolated = isolate_git(project, args.fixture)
-    else:
+        fixture_note = isolate_git(project, args.fixture)
+    elif (fixture_note := builtin_fixture(s.case, project)) is None:
         project.mkdir(parents=True)
         print(f"asef_eval: no --fixture, the project starts empty; {s.case} describes: {s.fixture}", file=sys.stderr)
     copy_runtime(ROOT, project / "asef")
@@ -245,8 +267,8 @@ def cmd_prepare(s: Scenario, args: argparse.Namespace) -> int:
         message = built.stdout
 
     baseline = git_baseline(project, harness)
-    if isolated:
-        baseline = f"{isolated}; {baseline}"
+    if fixture_note:
+        baseline = f"{fixture_note}; {baseline}"
     (out / "MESSAGE.txt").write_text(message, encoding="utf-8")
     (out / "RESULT.md").write_text(result_template(s, args.activation, args.lang, baseline), encoding="utf-8")
     print(f"asef_eval: {s.case} prepared in {out}")
