@@ -61,7 +61,13 @@ l'intero percorso.
 
 ### 1. Installa il framework nel progetto
 
-Copia questa repository nella cartella `asef/` del progetto:
+Copia questa repository nella cartella `asef/` del progetto, oppure, con la
+skill installata, esegui `/asef init`, o scompatta nel progetto l'archivio
+`asef-framework-<versione>.zip` della pagina
+[Releases](https://github.com/MrForty/asef/releases). Le ultime due vie copiano
+solo i file che l'agent usa a runtime: niente `CLAUDE.md`, strumenti o CI della
+repository, che gli agent che leggono i file di istruzioni annidati
+scambierebbero per regole del tuo progetto.
 
 ```text
 progetto/
@@ -201,6 +207,17 @@ Remove-Item -Recurse -Force $env:TEMP\asef-install
 Se preferisci non installare nulla nella cartella utente, clona la repository
 dove vuoi e usa `--dest` con la cartella skill del tuo agent.
 
+#### Dalla release, senza git
+
+Ogni release pubblica due archivi generati dagli stessi script:
+
+| Archivio | Contenuto | Dove scompattarlo |
+|---|---|---|
+| `asef-skill-<versione>.zip` | la skill con il framework incorporato | nella cartella skill del tuo agent ([percorsi](#percorsi-per-agent)) |
+| `asef-framework-<versione>.zip` | solo il framework di runtime | nella radice del progetto, dove crea `asef/` |
+
+Scaricare e scompattare è tutto: nessun installatore da eseguire.
+
 #### Da una copia locale
 
 Se il framework è già in `asef/`, l'installatore è dentro di esso:
@@ -233,6 +250,10 @@ usa `python` al posto di `python3`.
 | `copilot` | `.github/skills/asef` | `~/.copilot/skills/asef` |
 | `gemini` | `.gemini/skills/asef` | `~/.gemini/skills/asef` |
 | `opencode` | `.opencode/skills/asef` | `~/.config/opencode/skills/asef` |
+
+`.agents/skills` è la cartella condivisa: oltre a Codex la leggono anche Gemini
+CLI e OpenCode, quindi `--agent agents` copre più agent con un'unica
+installazione.
 
 Sono i percorsi documentati da ciascun agent al momento della pubblicazione. Se
 il tuo agent li cambia, o non è in elenco, usa `--dest` con la sua cartella:
@@ -271,7 +292,12 @@ Stampa la cartella del framework, la versione del kernel, la versione dichiarata
 dal prompt e gli artefatti trovati. È il primo comando da usare quando qualcosa
 non torna.
 
-Per aggiornare, riesegui l'installatore con `--force`. Per rimuovere la skill,
+Per aggiornare la skill, riesegui l'installatore con `--force`. Per aggiornare
+il framework di un progetto usa `/asef upgrade` (o
+`asef_prompt.py init --upgrade`): sostituisce solo i file del framework in
+`asef/` con la copia più recente portata dalla skill, rifiuta i downgrade e non
+tocca gli artefatti del progetto. `scan` segnala con `upgrade_available` quando
+la skill porta una versione più nuova. Per rimuovere la skill,
 cancella la cartella `asef` dalla directory skill del tuo agent.
 
 ### Uso
@@ -281,6 +307,7 @@ cancella la cartella `asef` dalla directory skill del tuo agent.
 | `/asef <obiettivo>` | Compila il prompt e lo esegue. È il comando normale |
 | `/asef prompt <obiettivo>` | Stampa soltanto il prompt e si ferma |
 | `/asef init` | Installa il framework in `asef/` se manca |
+| `/asef upgrade` | Aggiorna il framework in `asef/` alla versione portata dalla skill |
 | `/asef status` | Riassume `STATE.md` senza modificare nulla |
 
 Non devi indicare se si tratta di creazione o di modifica: la route la sceglie

@@ -10,6 +10,7 @@ verbatim, so the prompt stays one file with one home.
     python3 asef_prompt.py build --request "..." [fields]   # full prompt on stdout
     python3 asef_prompt.py scan                              # root, versions, artifacts
     python3 asef_prompt.py init                              # copy the framework into ./asef
+    python3 asef_prompt.py init --upgrade                    # refresh ./asef from a newer copy
 
 Exit codes: 0 ok, 1 bad arguments, 2 no framework found.
 Python 3.11+, standard library only.
@@ -45,6 +46,16 @@ CONTEXT_FIELDS = {
     "verify": "come capisco che funziona",
 }
 
+# What an agent needs at runtime. `init`, `init --upgrade` and
+# `install.py --bundle-framework` copy exactly this, so a target project never
+# receives the maintainers' CLAUDE.md, linter or CI, which agents that load
+# nested instruction files would otherwise read as project rules.
+RUNTIME_FILES = [
+    KERNEL_FILE, "ROUTER.md", "DECISION-ENGINE.md", "CONTEXT-MANAGER.md", "ARTIFACTS.md",
+    PROMPT_FILE, "CHANGELOG.md", "LICENSE",
+]
+RUNTIME_DIRS = ["modules", "templates", "guides"]
+
 SKILL_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -77,6 +88,31 @@ def resolve_root(project: Path, explicit: Path | None) -> Path:
         "(run `asef_prompt.py init`, or copy the repository into `asef/`)",
         2,
     )
+
+
+def version_key(version: str | None) -> tuple[int, ...]:
+    return tuple(int(part) for part in version.split(".")) if version else ()
+
+
+def bundled_root() -> Path | None:
+    """The framework copy the skill carries, if any: the source of `init`."""
+    for candidate in (SKILL_DIR / "framework", SKILL_DIR.parent.parent):
+        if is_root(candidate):
+            return candidate.resolve()
+    return None
+
+
+def copy_runtime(origin: Path, target: Path) -> None:
+    """Copy the runtime set only; replace any existing copy of each entry."""
+    target.mkdir(parents=True, exist_ok=True)
+    for name in RUNTIME_FILES:
+        if (origin / name).is_file():
+            shutil.copy2(origin / name, target / name)
+    for name in RUNTIME_DIRS:
+        if (target / name).exists():
+            shutil.rmtree(target / name)
+        if (origin / name).is_dir():
+            shutil.copytree(origin / name, target / name, ignore=shutil.ignore_patterns("__pycache__"))
 
 
 def kernel_version(root: Path) -> str | None:
@@ -181,27 +217,43 @@ def cmd_scan(root: Path, project: Path) -> int:
         "artifacts": scan_artifacts(project),
         "state": (project / "STATE.md").is_file(),
     }
+    source = bundled_root()
+    if source is not None and source != root:
+        info["bundled_version"] = kernel_version(source)
+        info["upgrade_available"] = version_key(info["bundled_version"]) > version_key(info["kernel_version"])
     print(json.dumps(info, ensure_ascii=False, indent=2))
     return 0
 
 
-def cmd_init(project: Path, source: Path | None) -> int:
+def cmd_init(project: Path, source: Path | None, upgrade: bool) -> int:
     target = project / "asef"
-    if is_root(target):
+    installed = is_root(target)
+    if installed and not upgrade:
         print(f"asef_prompt: `{display_root(target, project)}` already holds an ASEF framework", file=sys.stderr)
         return 0
-    if target.exists():
+    if target.exists() and not installed:
         die(f"{target} exists but is not an ASEF framework root")
-    candidates = [source] if source else [SKILL_DIR / "framework", SKILL_DIR.parent.parent]
-    origin = next((c for c in candidates if c and is_root(c)), None)
+    if source is not None and not is_root(source):
+        die(f"{source} is not an ASEF framework root", 2)
+    origin = source or bundled_root()
     if origin is None:
         die(
             "no framework copy to install from: clone https://github.com/MrForty/asef into `asef/`, "
             "or reinstall the skill with `install.py --bundle-framework`",
             2,
         )
-    shutil.copytree(origin, target, ignore=shutil.ignore_patterns(".git", "__pycache__", "skills"))
-    print(f"asef_prompt: framework v{kernel_version(target)} installed in `asef/`", file=sys.stderr)
+    if installed and origin.resolve() == target.resolve():
+        print("asef_prompt: `asef/` is the only framework copy; nothing to upgrade from", file=sys.stderr)
+        return 0
+
+    before, after = (kernel_version(target) if installed else None), kernel_version(origin)
+    if installed and version_key(after) < version_key(before):
+        die(f"refusing to downgrade `asef/` from v{before} to v{after}")
+    copy_runtime(origin, target)
+    if installed:
+        print(f"asef_prompt: framework in `asef/` upgraded v{before} -> v{after}; project artifacts untouched", file=sys.stderr)
+    else:
+        print(f"asef_prompt: framework v{after} installed in `asef/`", file=sys.stderr)
     return 0
 
 
@@ -228,6 +280,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     sub.add_parser("scan", help="report framework root, versions and artifacts as JSON")
     init = sub.add_parser("init", help="copy the framework into <project>/asef")
     init.add_argument("--source", type=Path, help="framework copy to install from")
+    init.add_argument("--upgrade", action="store_true", help="refresh an existing `asef/` from a newer copy")
 
     args = parser.parse_args(argv)
     if args.command is None:
@@ -242,7 +295,8 @@ def main(argv: list[str] | None = None) -> int:
     project = args.project.resolve()
 
     if args.command == "init":
-        return cmd_init(project, args.root or args.source)
+        source = args.source or args.root
+        return cmd_init(project, source.resolve() if source else None, args.upgrade)
 
     root = resolve_root(project, args.root)
     if args.command == "scan":

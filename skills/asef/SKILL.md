@@ -1,10 +1,12 @@
 ---
 name: asef
 description: Run a software task under ASEF (Agentic Software Engineering Framework) — new web app, SaaS or professional website, a feature, a bug, a refactor, an integration, a review, QA or a release. Turns a one-line goal into the full ASEF activation prompt and executes it, so nobody pastes the framework prompt by hand. Use whenever the user invokes /asef, mentions ASEF or "the framework", or asks for project work in a repository that carries an `asef/` folder or ASEF artifacts (STATE.md, PROJECT.md, SPEC.md).
-argument-hint: "<goal> | prompt <goal> | init | status"
+license: MIT
+compatibility: Any agent that reads Agent Skills. Python 3.11+ runs the helper scripts; without command execution the skill falls back to manual steps.
 metadata:
   framework: ASEF
   homepage: https://github.com/MrForty/asef
+  argument-hint: "<goal> | prompt <goal> | init | upgrade | status"
 ---
 
 # ASEF skill
@@ -26,6 +28,8 @@ Run `python3 SCRIPT scan` from the project root (`python` on Windows). It resolv
 3. `framework/` bundled next to this skill by `scripts/install.py --bundle-framework`;
 4. the repository this skill lives in.
 
+When the output carries `upgrade_available: true`, mention it once in the first output; never upgrade unasked.
+
 Exit code 2 means no framework: run `python3 SCRIPT init` (copies from 3 or 4) or, when that fails too, tell the user to copy https://github.com/MrForty/asef into `asef/`. Do not proceed without it.
 
 Without command execution, do the same by hand: find `asef/ASEF.md`, then copy `prompt universale ASEF.txt` verbatim and fill only its final block.
@@ -37,6 +41,7 @@ Without command execution, do the same by hand: find `asef/ASEF.md`, then copy `
 | `<goal>` | Build the prompt (3) and execute it (4) |
 | `prompt <goal>` | Build the prompt and print it verbatim inside a four-backtick fence (it contains three-backtick blocks); stop. For agents without skills, or for review before running |
 | `init` | Install the framework into `asef/` if missing; report version; stop |
+| `upgrade` | `python3 SCRIPT init --upgrade`: refresh the framework files in `asef/` from the skill's newer copy; project artifacts are untouched; report old → new version; stop |
 | `status` | Read `STATE.md` (and `LEARNINGS.md` if present); report route, verified state, next action, open gaps, human actions; change nothing |
 
 ## 3. Build the prompt

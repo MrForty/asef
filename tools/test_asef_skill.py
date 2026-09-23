@@ -23,6 +23,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills" / "asef"
 BUILDER = SKILL / "scripts" / "asef_prompt.py"
 INSTALLER = SKILL / "scripts" / "install.py"
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(BUILDER.parent))
+from asef_prompt import ARTIFACT_FILES, RUNTIME_DIRS, RUNTIME_FILES  # noqa: E402 - the set under test
 PROMPT = (ROOT / "prompt universale ASEF.txt").read_text(encoding="utf-8")
 PROMPT_HEAD = PROMPT[: PROMPT.index("```\nRichiesta:")]
 
@@ -135,6 +138,69 @@ def test_builder_roots(tmp: Path) -> None:
     check("init: is idempotent", again.returncode == 0 and "already holds" in again.stderr)
     after = run(BUILDER, "--project", str(init_target), "scan")
     check("init: installed root is detected", '"root": "asef"' in after.stdout)
+    check("init: copies exactly the runtime set", runtime_listing(init_target / "asef") == runtime_listing(ROOT, source=True))
+    dangling = dangling_references(init_target / "asef")
+    check("init: every framework file the runtime names is in the copy", not dangling, ", ".join(dangling))
+
+
+def dangling_references(copy: Path) -> list[str]:
+    """Backticked paths in the copied documents that exist in the repository but not in the copy.
+
+    Catches a runtime file or folder added to the framework but not to
+    `RUNTIME_FILES`/`RUNTIME_DIRS`. Project documents a target project owns
+    (its README, AGENTS.md, CLAUDE.md) share names with repository files and
+    are skipped.
+    """
+    missing: set[str] = set()
+    docs = [d for d in copy.rglob("*.md") if d.name != "CHANGELOG.md"]  # history, never loaded
+    for doc in docs + [copy / "prompt universale ASEF.txt"]:
+        for ref in re.findall(r"`([^`\s]+\.(?:md|txt|py))`", doc.read_text(encoding="utf-8")):
+            ref = ref.removeprefix("asef/")
+            if ref in ARTIFACT_FILES or not (ROOT / ref).is_file():
+                continue
+            if not (copy / ref).is_file() and not (doc.parent / ref).is_file():
+                missing.add(ref)
+    return sorted(missing)
+
+
+def runtime_listing(root: Path, source: bool = False) -> set[str]:
+    """Relative paths of a framework copy; for the repository, only what agents load."""
+    files = {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file() and "__pycache__" not in p.parts}
+    if source:
+        kept = set(RUNTIME_FILES)
+        files = {f for f in files if f in kept or f.split("/", 1)[0] in RUNTIME_DIRS}
+    return files
+
+
+def test_upgrade(tmp: Path) -> None:
+    """`init --upgrade` refreshes the framework and never touches project artifacts."""
+    project = fresh_project(tmp, "upgrade", with_framework=False)
+    run(BUILDER, "--project", str(project), "init")
+    installed = project / "asef"
+    kernel = installed / "ASEF.md"
+    current = re.search(r"version:\s*([0-9.]+)", kernel.read_text(encoding="utf-8")).group(1)
+    kernel.write_text(kernel.read_text(encoding="utf-8").replace(f"version: {current}", "version: 0.1"), encoding="utf-8")
+    (installed / "modules" / "stale.md").write_text("stale", encoding="utf-8")
+    (project / "STATE.md").write_text("# State\n", encoding="utf-8")
+
+    scan = json.loads(run(BUILDER, "--project", str(project), "scan").stdout)
+    check("upgrade: scan reports a newer bundled framework", scan.get("upgrade_available") is True and scan.get("bundled_version") == current, str(scan))
+
+    result = run(BUILDER, "--project", str(project), "init", "--upgrade")
+    check(
+        "upgrade: refreshes the runtime and leaves artifacts alone",
+        result.returncode == 0 and f"v0.1 -> v{current}" in result.stderr
+        and f"version: {current}" in kernel.read_text(encoding="utf-8")
+        and not (installed / "modules" / "stale.md").exists()
+        and (project / "STATE.md").read_text(encoding="utf-8") == "# State\n",
+        result.stderr,
+    )
+
+    older = tmp / "older-copy"
+    shutil.copytree(installed, older)
+    kernel.write_text(kernel.read_text(encoding="utf-8").replace(f"version: {current}", "version: 99.0"), encoding="utf-8")
+    refused = run(BUILDER, "--project", str(project), "init", "--upgrade", "--source", str(older))
+    check("upgrade: refuses a downgrade", refused.returncode == 1 and "downgrade" in refused.stderr, refused.stderr)
 
 
 def test_installer(tmp: Path) -> None:
@@ -154,6 +220,7 @@ def test_installer(tmp: Path) -> None:
     result = run(INSTALLER, "--dest", str(dest), "--bundle-framework")
     bundled = dest / "asef" / "framework"
     check("installer: --dest with bundled framework", result.returncode == 0 and (bundled / "ASEF.md").is_file() and not (bundled / "skills").exists() and not (bundled / ".git").exists(), result.stderr)
+    check("installer: bundles exactly the runtime set", runtime_listing(bundled) == runtime_listing(ROOT, source=True))
 
     bare = tmp / "bare-project"
     bare.mkdir()
@@ -207,7 +274,7 @@ def test_skill_file() -> None:
     check("skill: frontmatter present", front is not None)
     body = front.group(1) if front else ""
     check("skill: name is asef", re.search(r"^name:\s*asef\s*$", body, re.M) is not None)
-    check("skill: description under the 1536-character listing cap", 0 < len(re.search(r"^description:\s*(.*)$", body, re.M).group(1)) <= 1536)
+    check("skill: description within the Agent Skills 1024-character limit", 0 < len(re.search(r"^description:\s*(.*)$", body, re.M).group(1)) <= 1024)
     check("skill: takes the request from $ARGUMENTS", "$ARGUMENTS" in text)
     check("skill: builder flags documented match the script", all(f"--{flag}" in text for flag in ("request", "who", "constraint", "non-goal", "release", "artifact", "spec", "route")))
 
@@ -221,6 +288,7 @@ def main() -> int:
         test_skill_file()
         test_builder(tmp)
         test_builder_roots(tmp)
+        test_upgrade(tmp)
         test_installer(tmp)
         test_installer_link(tmp)
 
