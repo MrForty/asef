@@ -2,7 +2,9 @@ name: release
 
 on:
   push:
-    tags: ["v*"]
+    # Both spellings exist in this repository's history (`v1.7.0`, `1.8`), so
+    # both publish. The script rejects a tag that is not a version number.
+    tags: ["v*", "[0-9]*"]
   workflow_dispatch:
     inputs:
       version:
@@ -51,13 +53,48 @@ jobs:
             --out notes.md \
             --github-output
 
+      # A release may already exist under the other spelling of the same
+      # version, so find it before inventing a tag: publishing under the
+      # preferred form regardless would duplicate it. A pushed tag is the only
+      # candidate, so this resolves to that tag.
+      - name: Pick the tag to publish under
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREFERRED: ${{ steps.release.outputs.tag }}
+          CANDIDATES: ${{ steps.release.outputs.tags }}
+        run: |
+          chosen=""
+          for candidate in $CANDIDATES; do
+            if gh release view "$candidate" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+              echo "Release $candidate exists; publishing under it."
+              chosen="$candidate"
+              break
+            fi
+          done
+          if [ -z "$chosen" ]; then
+            for candidate in $CANDIDATES; do
+              # The checkout is shallow and carries no tags, so ask the API.
+              if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$candidate" > /dev/null 2>&1; then
+                echo "Tag $candidate exists without a release; publishing under it."
+                chosen="$candidate"
+                break
+              fi
+            done
+          fi
+          if [ -z "$chosen" ]; then
+            chosen="$PREFERRED"
+            echo "No existing tag or release; publishing under $chosen."
+          fi
+          echo "tag=$chosen" >> "$GITHUB_OUTPUT"
+
       # Two ready-to-use archives, built by the same scripts users run, so they
       # carry exactly the runtime set: the skill with the framework bundled
       # (unzip into any agent's skills folder), and the framework alone
       # (unzip into a project as `asef/`).
       - name: Build the release archives
         env:
-          TAG: ${{ steps.release.outputs.tag }}
+          TAG: ${{ steps.target.outputs.tag }}
         run: |
           python skills/asef/scripts/install.py --dest dist/skill --bundle-framework
           python skills/asef/scripts/asef_prompt.py --project dist/project init
@@ -68,7 +105,7 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.release.outputs.tag }}
+          TAG: ${{ steps.target.outputs.tag }}
           TITLE: ${{ steps.release.outputs.title }}
         run: |
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then

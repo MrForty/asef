@@ -799,11 +799,19 @@ ripubblica.
 
 | Come parte | Quando usarlo |
 |---|---|
-| Push di un tag `v*` | Rilascio normale dopo il bump della versione |
+| Push di un tag di versione | Rilascio normale dopo il bump della versione |
 | Avvio manuale del workflow `release` | Ripubblicare le note corrette, o rilasciare una versione già presente su `main` |
 
-Il tag porta tre componenti anche quando il kernel ne dichiara due: la versione
-`1.8` diventa il tag `v1.8.0`.
+Il prefisso `v` è facoltativo: la storia di questa repository contiene entrambe
+le forme, quindi sia `v1.9.0` che `1.9` attivano la pubblicazione. Un tag
+pushato viene usato esattamente com'è, perché pubblicare sotto un'altra
+scrittura lascerebbe la sua release staccata e creerebbe un secondo tag. Un tag
+che non è un numero di versione viene rifiutato con un messaggio esplicito.
+
+Quando il workflow parte a mano non c'è nessun tag da seguire. In quel caso usa
+la forma preferita a tre componenti, cioè la versione `1.9` diventa il tag
+`v1.9.0`, ma prima controlla se una release esiste già sotto una scrittura
+equivalente e in quel caso aggiorna quella, invece di duplicarla.
 
 ## Principi essenziali
 

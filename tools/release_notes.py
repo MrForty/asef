@@ -9,6 +9,10 @@ the tag, the title and the notes the release workflow publishes.
     python3 tools/release_notes.py --requested 1.8.0 --title "ASEF 1.8.0 - ..."
     python3 tools/release_notes.py --self-test
 
+Tags may or may not carry the leading `v`: this repository has both forms in
+its history, so a pushed tag is published exactly as pushed, and only a
+release with no tag to go by gets the preferred `vX.Y.Z` form.
+
 Exit code 0 when the release is coherent, 1 when it is not.
 Python 3.11+, standard library only.
 """
@@ -58,21 +62,50 @@ def changelog_section(root: Path, version: str, fallback: str = "") -> str:
     raise SystemExit(f"release: CHANGELOG.md has no {named} entry")
 
 
+def strip_prefix(tag: str) -> str:
+    """`v1.8.0` and `1.8.0` name the same version; both forms are in use here."""
+    tag = tag.strip()
+    return tag[1:] if tag[:1].lower() == "v" else tag
+
+
 def resolve_version(root: Path, requested: str, ref: str) -> str:
     """An explicit request wins, then the tag being pushed, then the kernel."""
-    version = requested.strip() or (ref.strip()[1:] if ref.strip().startswith("v") else "")
-    version = version or kernel_version(root)
+    version = requested.strip() or strip_prefix(ref) or kernel_version(root)
     if not re.fullmatch(r"[0-9]+(?:\.[0-9]+)*", version):
         raise SystemExit(f"release: `{version}` is not a version number")
     return version
 
 
-def tag_for(version: str) -> str:
-    """Tags carry three components; the kernel declares two (1.8 -> v1.8.0)."""
+def padded(version: str) -> str:
+    """Three components, since the kernel declares two (1.8 -> 1.8.0)."""
     parts = version.split(".")
-    while len(parts) < 3:
-        parts.append("0")
-    return "v" + ".".join(parts)
+    return ".".join(parts + ["0"] * (3 - len(parts))) if len(parts) < 3 else version
+
+
+def tag_for(version: str) -> str:
+    """The form a release is given when no pushed tag names it already."""
+    return "v" + padded(version)
+
+
+def release_tag(version: str, ref: str = "") -> str:
+    """A pushed tag is authoritative: publishing under any other spelling
+    would leave its release detached and create a second tag."""
+    return ref.strip() or tag_for(version)
+
+
+def tag_candidates(version: str, ref: str = "") -> list[str]:
+    """Spellings that would name this same release, preferred one first.
+
+    Without a pushed tag the workflow has to find an existing release before
+    inventing a tag for it, or a release already published as `1.8` would be
+    duplicated as `v1.8.0`.
+    """
+    if ref.strip():
+        return [ref.strip()]
+    full = padded(version)
+    short = version
+    seen = dict.fromkeys([f"v{full}", full] + ([f"v{short}", short] if short != full else []))
+    return list(seen)
 
 
 def check_alignment(root: Path, version: str) -> None:
@@ -85,11 +118,13 @@ def check_alignment(root: Path, version: str) -> None:
         )
 
 
-def build(root: Path, version: str, title: str) -> tuple[str, str, str]:
+def build(root: Path, version: str, title: str, ref: str = "") -> tuple[str, str, str]:
     check_alignment(root, version)
     notes = changelog_section(root, version, fallback=kernel_version(root))
     notes += f"\n\n---\n\nInstallation and usage: [README]({README_LINK}).\n"
-    return tag_for(version), title.strip() or f"ASEF {tag_for(version)[1:]}", notes
+    # The title names the version, never the tag: a tag without the `v` would
+    # otherwise lose its first digit to the prefix strip.
+    return release_tag(version, ref), title.strip() or f"ASEF {padded(version)}", notes
 
 
 def self_test() -> int:
@@ -103,6 +138,14 @@ def self_test() -> int:
 
     check("tag pads the kernel version to three components", tag_for("1.8") == "v1.8.0")
     check("tag keeps a full version untouched", tag_for("1.8.2") == "v1.8.2")
+    check("the `v` prefix is optional when reading a tag",
+          strip_prefix("v1.8.0") == "1.8.0" and strip_prefix("1.8.0") == "1.8.0")
+    check("a pushed tag is published exactly as pushed",
+          release_tag("1.8", "1.8") == "1.8" and release_tag("1.8", "v1.8.0") == "v1.8.0")
+    check("without a pushed tag the preferred form is used", release_tag("1.8") == "v1.8.0")
+    check("candidates cover both spellings, preferred first",
+          tag_candidates("1.8") == ["v1.8.0", "1.8.0", "v1.8", "1.8"])
+    check("a pushed tag is the only candidate", tag_candidates("1.8", "1.8") == ["1.8"])
 
     with tempfile.TemporaryDirectory() as raw:
         work = Path(raw)
@@ -113,6 +156,7 @@ def self_test() -> int:
 
         check("version falls back to the kernel", resolve_version(work, "", "") == "1.8")
         check("a pushed tag names the version", resolve_version(work, "", "v1.8.0") == "1.8.0")
+        check("a tag without the prefix names it too", resolve_version(work, "", "1.8.0") == "1.8.0")
         check("an explicit request wins", resolve_version(work, "1.8", "v9.9.9") == "1.8")
 
         tag, title, notes = build(work, "1.8", "")
@@ -129,6 +173,14 @@ def self_test() -> int:
         tag, title, notes = build(work, "1.8.0", "")
         check("a three-component tag finds the entry the kernel names",
               tag == "v1.8.0" and "Summary line." in notes and "Older." not in notes)
+
+        # A tag without the prefix must not be republished under another name,
+        # and must not lose its first digit to the title.
+        tag, title, notes = build(work, "1.8", "", ref="1.8")
+        check("a prefixless tag keeps its name and gets a sane title",
+              tag == "1.8" and title == "ASEF 1.8.0" and "Summary line." in notes)
+        tag, title, _ = build(work, "1.8.0", "", ref="v1.8.0")
+        check("a prefixed tag keeps its name", tag == "v1.8.0" and title == "ASEF 1.8.0")
 
         for label, version in (("a version the kernel does not declare", "2.0"),
                                ("a version outside the declared line", "1.90")):
@@ -162,13 +214,14 @@ def main(argv: list[str] | None = None) -> int:
         return self_test()
 
     version = resolve_version(args.root, args.requested, args.ref)
-    tag, title, notes = build(args.root, version, args.title)
+    tag, title, notes = build(args.root, version, args.title, args.ref)
+    candidates = tag_candidates(version, args.ref)
 
     if args.out:
         args.out.write_text(notes, encoding="utf-8")
     if args.github_output:
         target = os.environ.get("GITHUB_OUTPUT")
-        line = f"tag={tag}\ntitle={title}\n"
+        line = f"tag={tag}\ntitle={title}\ntags={' '.join(candidates)}\n"
         if target:
             with open(target, "a", encoding="utf-8") as handle:
                 handle.write(line)
