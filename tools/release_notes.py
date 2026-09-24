@@ -93,6 +93,24 @@ def release_tag(version: str, ref: str = "") -> str:
     return ref.strip() or tag_for(version)
 
 
+def equivalent_versions(version: str) -> list[str]:
+    """Numbers naming the same release, longest first.
+
+    A trailing zero component is optional, so `1.8.0` and `1.8` are one
+    release however the caller spelled it. Derived from the number rather than
+    from the requested string, or asking for `1.8.0` would miss a release
+    already published as `1.8`. Never trimmed below two components, so a bare
+    `2` cannot collide with an unrelated tag.
+    """
+    forms = [padded(version)]
+    trimmed = version.split(".")
+    while len(trimmed) > 2 and trimmed[-1] == "0":
+        trimmed.pop()
+        forms.append(".".join(trimmed))
+    forms.append(version)
+    return list(dict.fromkeys(forms))
+
+
 def tag_candidates(version: str, ref: str = "") -> list[str]:
     """Spellings that would name this same release, preferred one first.
 
@@ -102,10 +120,8 @@ def tag_candidates(version: str, ref: str = "") -> list[str]:
     """
     if ref.strip():
         return [ref.strip()]
-    full = padded(version)
-    short = version
-    seen = dict.fromkeys([f"v{full}", full] + ([f"v{short}", short] if short != full else []))
-    return list(seen)
+    spellings = [f"{prefix}{form}" for form in equivalent_versions(version) for prefix in ("v", "")]
+    return list(dict.fromkeys(spellings))
 
 
 def check_alignment(root: Path, version: str) -> None:
@@ -145,6 +161,12 @@ def self_test() -> int:
     check("without a pushed tag the preferred form is used", release_tag("1.8") == "v1.8.0")
     check("candidates cover both spellings, preferred first",
           tag_candidates("1.8") == ["v1.8.0", "1.8.0", "v1.8", "1.8"])
+    check("a padded request still covers the short spellings",
+          tag_candidates("1.8.0") == ["v1.8.0", "1.8.0", "v1.8", "1.8"])
+    check("a patch version has no shorter spelling",
+          tag_candidates("1.8.2") == ["v1.8.2", "1.8.2"])
+    check("candidates never trim below two components",
+          tag_candidates("2.0.0") == ["v2.0.0", "2.0.0", "v2.0", "2.0"])
     check("a pushed tag is the only candidate", tag_candidates("1.8", "1.8") == ["1.8"])
 
     with tempfile.TemporaryDirectory() as raw:
