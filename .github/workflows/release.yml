@@ -117,4 +117,35 @@ jobs:
               --target "$GITHUB_SHA" --title "$TITLE" --notes-file notes.md --latest
           fi
           gh release upload "$TAG" dist/*.zip --repo "$GITHUB_REPOSITORY" --clobber
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName,name,isLatest,assets
+
+      # The release is already published once the step above succeeds, so this
+      # one has to verify it rather than describe it: `gh release view --json`
+      # exits non-zero on a field name it does not know, which once turned a
+      # release that had fully succeeded into a red run. Checking the archives
+      # are really attached is worth a step; printing the record was not.
+      - name: Verify the published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.target.outputs.tag }}
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,name,isDraft,isPrerelease,assets > published.json
+          python - <<'PY'
+          import json, os, pathlib, sys
+
+          tag = os.environ["TAG"]
+          release = json.loads(pathlib.Path("published.json").read_text(encoding="utf-8"))
+          attached = {asset["name"] for asset in release.get("assets", [])}
+          expected = {path.name for path in pathlib.Path("dist").glob("*.zip")}
+
+          problems = [f"archive {name} is missing from the release" for name in sorted(expected - attached)]
+          if not expected:
+              problems.append("no archive was built, so none could be attached")
+          if release.get("isDraft"):
+              problems.append("the release is still a draft")
+
+          print(f"{tag}: {release.get('name')!r}, {len(attached)} asset(s): {', '.join(sorted(attached))}")
+          for problem in problems:
+              print(f"::error::{tag}: {problem}")
+          sys.exit(1 if problems else 0)
+          PY
